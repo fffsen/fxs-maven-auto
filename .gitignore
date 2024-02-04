@@ -1,0 +1,7 @@
+**/target/
+**/pom.xml.lock
+**/mvnw
+**/mvnw.cmd
+**/m2/
+.idea/
+*.iml
