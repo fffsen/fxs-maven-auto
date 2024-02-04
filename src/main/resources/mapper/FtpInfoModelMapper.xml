@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.FtpInfoDao" >
+  <resultMap id="BaseResultMap" type="FtpInfoModel" >
+    <id column="ftp_id" property="ftpId" jdbcType="INTEGER" />
+    <result column="ip_addr" property="ipAddr" jdbcType="VARCHAR" />
+    <result column="port" property="port" jdbcType="INTEGER" />
+    <result column="ftp_user" property="ftpUser" jdbcType="VARCHAR" />
+    <result column="ftp_pwd" property="ftpPwd" jdbcType="VARCHAR" />
+    <result column="is_default" property="isDefault"  />
+    <result column="creator_id" property="creatorId"  />
+    <result column="preview_path" property="previewPath"  />
+    <result column="preview_port" property="previewPort"  />
+    <result column="ftp_type" property="ftpType"  />
+    <result column="bucket_name" property="bucketName"  />
+    <result column="open_http" property="openHttp"  />
+  </resultMap>
+ <!--   分页查询 -->
+  <select id="selectPage" parameterType="map" resultType="map">
+  	SELECT
+		a.ftp_id as ftpId,
+		a.ip_addr AS ipAddr,
+		a.port,
+		a.preview_path as previewPath,
+		a.preview_port as previewPort,
+		a.ftp_user AS ftpUser,
+		a.ftp_pwd AS ftpPwd,
+		a.is_default AS isDefault,
+		a.ftp_type as ftpType,
+		a.bucket_name as bucketName,
+		b.user_name as userName
+	FROM
+		fb_ftp_info a left join fb_sys_user b on a.creator_id=b.uid
+	<where>
+		<if test="ipAddr != null and ipAddr != ''">
+			and a.ip_addr like concat('%',#{ipAddr},'%')
+		</if>
+		<if test="ftpType != null and ftpType != ''">
+			and a.ftp_type = #{ftpType}
+		</if>
+		<if test="sameGroupUserId != null">
+			and a.creator_id in (
+			<foreach collection="sameGroupUserId" separator="," item="item">
+				#{item}
+			</foreach>
+			)
+		</if>
+	</where>
+	ORDER BY a.is_default desc limit #{startRow},#{pageSize}
+  </select>
+  <!--   查询总数  绑定分页查询 -->
+  <select id="selectPageCount" parameterType="map" resultType="java.lang.Integer">
+  	SELECT
+		count(ftp_id)
+	FROM
+		fb_ftp_info
+	<where>
+		<if test="ipAddr != null and ipAddr != ''">
+			and ip_addr like concat('%',#{ipAddr},'%')
+		</if>
+		<if test="ftpType != null and ftpType != ''">
+			and ftp_type = #{ftpType}
+		</if>
+		<if test="sameGroupUserId != null">
+			and creator_id in (
+			<foreach collection="sameGroupUserId" separator="," item="item">
+				#{item}
+			</foreach>
+			)
+		</if>
+	</where>
+  </select>
+  <!-- 新增ftp信息 -->
+  <insert id="insert" parameterType="map" >
+    insert into fb_ftp_info (ip_addr, port,
+      ftp_user, ftp_pwd,is_default,creator_id,preview_path,preview_port,ftp_type,bucket_name,open_http)
+    values (#{ipAddr,jdbcType=VARCHAR}, #{port,jdbcType=INTEGER},
+      #{ftpUser,jdbcType=VARCHAR}, #{ftpPwd,jdbcType=VARCHAR},#{isDefault},#{creatorId},#{previewPath},#{previewPort},#{ftpType},#{bucketName},#{openHttp})
+  </insert>
+  <!-- 修改ftp信息  -->
+  <update id="updateByPrimaryKey" parameterType="map" >
+    update fb_ftp_info
+    set ip_addr = #{ipAddr,jdbcType=VARCHAR},
+      port = #{port,jdbcType=INTEGER},
+      preview_path = #{previewPath},
+      preview_port = #{previewPort},
+      ftp_user = #{ftpUser,jdbcType=VARCHAR},
+      ftp_pwd = #{ftpPwd,jdbcType=VARCHAR},
+      ftp_type = #{ftpType},
+      bucket_name = #{bucketName},
+      open_http = #{openHttp}
+    where ftp_id = #{ftpId,jdbcType=INTEGER}
+  </update>
+  <!-- 删除 -->
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from fb_ftp_info
+    where ftp_id = #{ftpId,jdbcType=INTEGER}
+  </delete>
+ <!--   根据id查询详细 -->
+ <select id="selectByPrimaryKey" resultType="map" parameterType="java.lang.Integer" >
+   SELECT
+		ftp_id as ftpId,
+		ip_addr AS ipAddr,
+		port,
+		preview_path as previewPath,
+		preview_port as previewPort,
+		ftp_user AS ftpUser,
+		ftp_pwd AS ftpPwd,
+		is_default AS isDefault,
+		ftp_type as ftpType,
+		bucket_name as bucketName,
+		open_http as openHttp
+	FROM
+		fb_ftp_info
+    where ftp_id = #{ftpId,jdbcType=INTEGER}
+  </select>
+ <!--   根据id修改默认状态 -->
+  <update id="updateDefaultById" parameterType="map" >
+    update fb_ftp_info set is_default = #{isDefault}
+    <where>
+    	<if test="ftpId != null and ftpId > 0">
+    		ftp_id = #{ftpId,jdbcType=INTEGER}
+    	</if>
+    </where>
+  </update>
+
+  <!--   条件查询 -->
+  <select id="selectInfo" parameterType="map" resultType="map">
+  	SELECT
+		ftp_id as ftpId,
+		ip_addr AS ipAddr,
+		port,
+		ftp_user AS ftpUser,
+		is_default AS isDefault
+	FROM
+		fb_ftp_info
+	<where>
+		<if test="ipAddr != null and ipAddr != ''">
+			and ip_addr like concat('%',#{ipAddr},'%')
+		</if>
+		<if test="isDefault != null">
+			and is_default = #{isDefault}
+		</if>
+		<if test="sameGroupUserId != null">
+			and creator_id in (
+			<foreach collection="sameGroupUserId" separator="," item="item">
+				#{item}
+			</foreach>
+			)
+		</if>
+	</where>
+
+  </select>
+
+  <!--查询默认ftp信息 -->
+  <select id="selectDefaultFpt" resultMap="BaseResultMap">
+  	SELECT * FROM fb_ftp_info where is_default = 1
+  </select>
+
+   <!--  验证ftp重复 -->
+  <select id="validRepeat" parameterType="map" resultType="map">
+  	select
+		ftp_id as ftpId,
+		ip_addr AS ipAddr,
+		port,
+		ftp_user AS ftpUser,
+		is_default AS isDefault
+	 from fb_ftp_info
+	 <where>
+	 	 ip_addr = #{ipAddr} and port=#{port} and preview_path=#{previewPath} and preview_port=#{previewPort} and ftp_type=#{ftpType}
+	 	<if test="ftpId != null">
+  			and ftp_id != #{ftpId}
+  		</if>
+  		<if test="bucketName != null and bucketName != ''">
+  			and bucket_name=#{bucketName}
+  		</if>
+	 </where>
+  </select>
+
+</mapper>

@@ -1,0 +1,1145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zycm.zybao.dao.MediaAttributeDao">
+
+  <!--   增加3个字段 -->
+  <sql id="page_sql">
+	SELECT
+		a.client_number AS clientNumber,
+		c.media_group_name AS mediaGroupName,
+		b.media_group_id as mediaGroupId,
+		a.client_name AS clientName,
+		a.media_ip AS mediaIp,
+		a.net_type as netType,
+		a.play_program_num AS playProgramNum,
+		c.media_group_id,
+		a.ad_status AS adStatus,
+		a.light,
+		a.voice,
+		a.cpu_temp AS cpuTemp,
+		a.client_version AS clientVersion,
+		a.sys_version AS sysVersion,
+		a.disk_free_space AS diskFreeSpace,
+		a.create_time AS createTime,
+		a.last_receive_time AS lastReceiveTime,
+		a.machine_code AS machineCode,
+		a.mid,
+		a.download_progress as downloadProgress,
+		a.dog_version as dogVersion,
+		f.ftp_id as ftpId,
+		i.iccid,
+		i.imsi,
+		i.cur_data_usage as curDataUsage,
+		i.card_status as cardStatus,
+		i.iot_type as iotType,
+		i.iccid_update_type as iccidUpdateType,
+		a.video_out_mode as videoOutMode,
+		a.net_speed as netSpeed,
+		a.test_speed_time as testSpeedTime,
+		a.connect_addr as connectAddr,
+		a.work_status as workStatus,
+		a.record_screen_info as recordScreenInfo
+	FROM
+		fb_media_attribute a LEFT JOIN fb_ftp_info f on a.ftp_id=f.ftp_id
+	LEFT JOIN fb_iot_media_attribute i on a.machine_code=i.machine_code and i.is_main=1
+	LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+	LEFT JOIN fb_media_group c ON b.media_group_id = c.media_group_id
+  </sql>
+  <!-- led模块的终端分页查询 -->
+  <sql id="page_led_sql">
+	SELECT
+		a.client_number AS clientNumber,
+		c.media_group_name AS mediaGroupName,
+		b.media_group_id as mediaGroupId,
+		a.client_name AS clientName,
+		a.media_ip AS mediaIp,
+		count(d.p_id) as playProgramNum,
+		c.media_group_id,
+		a.ad_status AS adStatus,
+		a.light,
+		a.voice,
+		a.cpu_temp AS cpuTemp,
+		a.client_version AS clientVersion,
+		a.disk_free_space AS diskFreeSpace,
+		a.create_time AS createTime,
+		a.last_receive_time AS lastReceiveTime,
+		a.machine_code AS machineCode,
+		a.mid,
+		a.download_progress as downloadProgress,
+		a.dog_version as dogVersion,
+		aa.led_screen_type as ledScreenType,
+		aa.max_num as maxNum,
+		a.work_status as workStatus
+	FROM
+		fb_media_attribute a LEFT JOIN fb_led_media_attribute aa on a.machine_code=aa.machine_code
+	LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+	LEFT JOIN fb_media_group c ON b.media_group_id = c.media_group_id
+  </sql>
+  <!--   分页查询终端数据 -->
+  <select id="selectPage" parameterType="map" resultType="map">
+  	<include refid="page_sql"></include>
+	<where>
+		a.ad_delete=1
+		<if test="parentIds != null">
+			and c.media_group_id in (
+			<foreach collection="parentIds" item="parentId" separator=",">
+			 #{parentId}
+			</foreach>
+			)
+		</if>
+		<if test="uid != null and uid > 0 ">
+			and c.media_group_id in (select media_group_id from fb_sysuser_mediagroup where uid=#{uid})
+		</if>
+		<if test="clientName != null and clientName !='' ">
+			and a.client_name like concat('%',#{clientName},'%')
+		</if>
+		<if test="clientNumber != null and clientNumber !='' ">
+			and a.client_number like concat('%',#{clientNumber},'%')
+		</if>
+		<if test="adStatus != null and adStatus !='' ">
+			and a.ad_status = #{adStatus}
+		</if>
+		<if test="netType != null and netType > 0 ">
+			and a.net_type = #{netType}
+		</if>
+		<if test="ftpId != null and ftpId > 0 ">
+			and a.ftp_id = #{ftpId}
+		</if>
+		<if test="iotType != null">
+			and i.iot_type = #{iotType}
+		</if>
+		<if test="iccid != null and iccid !=''">
+			and i.iccid = #{iccid}
+		</if>
+		<if test="imsi != null and imsi !=''">
+			and i.imsi = #{imsi}
+		</if>
+		<if test="cardStatus != null">
+			and i.card_status=#{cardStatus}
+		</if>
+		<if test="connectAddr != null and connectAddr != ''">
+			and a.connect_addr = #{connectAddr}
+		</if>
+		<if test="clientVersion != null and clientVersion != ''">
+			and a.client_version = #{clientVersion}
+		</if>
+		<if test="dogVersion != null and dogVersion != ''">
+			and a.dog_version = #{dogVersion}
+		</if>
+		<if test="workStatus != null">
+			and a.work_status = #{workStatus}
+		</if>
+		<if test="videoOutMode != null">
+			and a.video_out_mode = #{videoOutMode}
+		</if>
+		<if test="mediaIp != null and mediaIp != ''">
+			and a.media_ip = #{mediaIp}
+		</if>
+		<if test="diskFreeSpace != null">
+			and a.disk_free_space &lt;= #{diskFreeSpace}
+		</if>
+		<if test="excludeExistMonitor != null"><!-- 排除存在的监播终端 -->
+			and a.mid not in (select mid from fb_monitor_media_attribute where default_view=1)
+		</if>
+		<if test="recordScreenInfo != null and recordScreenInfo == '-1'">
+			and a.record_screen_info is null
+		</if>
+		<if test="recordScreenInfo != null and recordScreenInfo != '-1'">
+			and a.record_screen_info like concat('%',#{recordScreenInfo},'%')
+		</if>
+	</where>
+	<choose>
+		<when test="adStatus != null and adStatus !='' and adStatus==0 and latelyOff==1">order by a.ad_status DESC,a.last_receive_time DESC </when>
+		<otherwise>order by a.ad_status DESC,a.mid DESC </otherwise>
+	</choose>
+	limit #{startRow},#{pageSize}
+  </select>
+  <!-- 根据多个终端组id 统计终端组每个的节目数 -->
+  <select id="selectGroupProgNum"  resultType="map">
+	SELECT
+		b.media_group_id AS mediaGroupId,
+		b.media_group_name AS mediaGroupName,
+		count(a.publish_id) AS programNum
+	FROM
+		fb_media_group b
+	LEFT JOIN fb_program_publish_record a ON a.media_group_id = b.media_group_id
+	WHERE
+		b.media_group_id IN (
+		<foreach collection="array" item="item" separator=",">
+			#{item}
+		</foreach>
+		)
+	GROUP BY b.media_group_id
+  </select>
+  <!--   分页查询总条数 -->
+  <select id="selectPageCount" parameterType="map" resultType="java.lang.String">
+	  select count(*) from (
+		   SELECT
+				c.media_group_id
+			FROM
+				fb_media_attribute a
+			LEFT JOIN fb_iot_media_attribute i on a.machine_code=i.machine_code and i.is_main=1
+			LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+			LEFT JOIN fb_media_group c ON b.media_group_id = c.media_group_id
+			<where>
+				a.ad_delete=1
+				<if test="parentIds != null">
+					and c.media_group_id in (
+					<foreach collection="parentIds" item="parentId" separator=",">
+					 #{parentId}
+					</foreach>
+					)
+				</if>
+				<if test="uid != null and uid > 0 ">
+					and c.media_group_id in (select media_group_id from fb_sysuser_mediagroup where uid=#{uid})
+				</if>
+				<if test="clientName != null and clientName !='' ">
+					and a.client_name like concat('%',#{clientName},'%')
+				</if>
+				<if test="clientNumber != null and clientNumber !='' ">
+					and a.client_number like concat('%',#{clientNumber},'%')
+				</if>
+				<if test="adStatus != null and adStatus !='' ">
+					and a.ad_status = #{adStatus}
+				</if>
+				<if test="netType != null and netType > 0 ">
+					and a.net_type = #{netType}
+				</if>
+				<if test="ftpId != null and ftpId > 0 ">
+					and a.ftp_id = #{ftpId}
+				</if>
+				<if test="iotType != null">
+					and i.iot_type = #{iotType}
+				</if>
+				<if test="iccid != null and iccid !=''">
+					and i.iccid = #{iccid}
+				</if>
+				<if test="imsi != null and imsi !=''">
+					and i.imsi = #{imsi}
+				</if>
+				<if test="cardStatus != null">
+					and i.card_status=#{cardStatus}
+				</if>
+				<if test="connectAddr != null and connectAddr != ''">
+					and a.connect_addr = #{connectAddr}
+				</if>
+				<if test="clientVersion != null and clientVersion != ''">
+					and a.client_version = #{clientVersion}
+				</if>
+				<if test="dogVersion != null and dogVersion != ''">
+					and a.dog_version = #{dogVersion}
+				</if>
+				<if test="workStatus != null">
+					and a.work_status = #{workStatus}
+				</if>
+				<if test="videoOutMode != null">
+					and a.video_out_mode = #{videoOutMode}
+				</if>
+				<if test="mediaIp != null and mediaIp != ''">
+					and a.media_ip = #{mediaIp}
+				</if>
+				<if test="diskFreeSpace != null">
+					and a.disk_free_space &lt;= #{diskFreeSpace}
+				</if>
+				<if test="excludeExistMonitor != null"><!-- 排除存在的监播终端 -->
+					and a.mid not in (select mid from fb_monitor_media_attribute where default_view=1)
+				</if>
+				<if test="recordScreenInfo != null and recordScreenInfo == '-1'">
+					and a.record_screen_info is null
+				</if>
+				<if test="recordScreenInfo != null and recordScreenInfo != '-1'">
+					and a.record_screen_info like concat('%',#{recordScreenInfo},'%')
+				</if>
+			</where>
+		) bb
+  </select>
+
+  <!-- 分页查询节目数为0的终端组 -->
+  <select id="selectPageGroupProgNumZero"  resultType="map">
+  	SELECT
+			*
+	FROM (
+		SELECT
+						b.media_group_id AS mediaGroupId,
+						b.media_group_name AS mediaGroupName,
+						count(c.publish_id) AS programNum
+		FROM (
+		<choose>
+                <when test="isAdmin != null and isAdmin == false">
+                    SELECT
+						gg.media_group_id
+					FROM
+						fb_media_group_relation ff LEFT JOIN fb_sysuser_mediagroup gg on gg.media_group_id=ff.media_group_id
+					where gg.uid=#{uid}
+					GROUP BY
+						gg.media_group_id
+                </when>
+                <when test="isAdmin != null and isAdmin == true">
+                    SELECT
+						media_group_id
+					FROM
+						fb_media_group_relation
+					GROUP BY
+						media_group_id
+                </when>
+                <otherwise>
+                </otherwise>
+        </choose>
+		) a
+		LEFT JOIN fb_media_group b ON a.media_group_id = b.media_group_id
+		LEFT JOIN fb_program_publish_record c ON b.media_group_id = c.media_group_id
+		GROUP BY b.media_group_id
+	) aa
+	<where>
+		aa.programNum = 0 and aa.mediaGroupId is not null
+	</where>
+	limit #{startRow},#{pageSize}
+  </select>
+  <select id="selectPageGroupProgNumZeroCount"  parameterType="map" resultType="java.lang.Integer">
+  	SELECT
+			count(*)
+	FROM (
+		SELECT
+						b.media_group_id AS mediaGroupId,
+						b.media_group_name AS mediaGroupName,
+						count(c.publish_id) AS programNum
+		FROM (
+		<choose>
+                <when test="isAdmin != null and isAdmin == false">
+                    SELECT
+						gg.media_group_id
+					FROM
+						fb_media_group_relation ff LEFT JOIN fb_sysuser_mediagroup gg on gg.media_group_id=ff.media_group_id
+					where gg.uid=#{uid}
+					GROUP BY
+						gg.media_group_id
+                </when>
+                <when test="isAdmin != null and isAdmin == true">
+                    SELECT
+						media_group_id
+					FROM
+						fb_media_group_relation
+					GROUP BY
+						media_group_id
+                </when>
+                <otherwise>
+                </otherwise>
+        </choose>
+		) a
+		LEFT JOIN fb_media_group b ON a.media_group_id = b.media_group_id
+		LEFT JOIN fb_program_publish_record c ON b.media_group_id = c.media_group_id
+		GROUP BY b.media_group_id
+	) aa
+	<where>
+		aa.programNum = 0 and aa.mediaGroupId is not null
+	</where>
+  </select>
+  <!-- 分页查询节目数为0的终端 -->
+  <select id="selectPageMediaProgNumZero" resultType="map" parameterType="map">
+	SELECT
+		b.media_group_id as mediaGroupId,
+		a.media_group_name AS mediaGroupName,
+		b.mid,
+		d.client_number AS clientNumber,
+		d.client_name AS clientName,
+		c.publish_id AS publishId
+	FROM
+		fb_media_group_relation b
+	LEFT JOIN fb_program_publish_record c ON b.media_group_id = c.media_group_id
+	LEFT JOIN fb_media_group a ON b.media_group_id = a.media_group_id
+	LEFT JOIN fb_media_attribute d ON b.mid = d.mid
+	<where>
+		publish_id IS NULL and d.mid is not null
+		<if test="isAdmin != null and isAdmin == false">
+			AND b.media_group_id in (
+				SELECT
+					gg.media_group_id
+				FROM
+					fb_sysuser_mediagroup gg
+				where gg.uid=#{uid}
+				GROUP BY gg.media_group_id
+			)
+		</if>
+	</where>
+	ORDER BY b.media_group_id asc limit #{startRow},#{pageSize}
+  </select>
+  <select id="selectPageMediaProgNumZeroCount" parameterType="map" resultType="java.lang.Integer">
+	SELECT
+		count(b.media_group_id)
+	FROM
+		fb_media_group_relation b
+	LEFT JOIN fb_program_publish_record c ON b.media_group_id = c.media_group_id
+	LEFT JOIN fb_media_group a ON b.media_group_id = a.media_group_id
+	LEFT JOIN fb_media_attribute d ON b.mid = d.mid
+	<where>
+		publish_id IS NULL and d.mid is not null
+		<if test="isAdmin != null and isAdmin == false">
+			AND b.media_group_id in (
+				SELECT
+					gg.media_group_id
+				FROM
+					fb_sysuser_mediagroup gg
+				where gg.uid=#{uid}
+				GROUP BY gg.media_group_id
+			)
+		</if>
+	</where>
+  </select>
+
+  <!--   新加终端 -->
+  <insert id="batchInsert"  parameterType="List" useGeneratedKeys="true"
+    keyProperty="mid">
+    insert into fb_media_attribute (machine_code, client_number,
+      client_name, sys_version, client_version,
+      hardware, register_code, light,
+      voice, cpu_temp, disk_space,
+      disk_free_space, expire_file_num, play_file_num,
+      play_program_num, phone_number, ftp_id,media_ip,create_time,ad_status,ad_delete
+      )
+    values
+    <foreach collection="list" item="item" separator=",">
+		(#{item.machineCode,jdbcType=VARCHAR}, #{item.clientNumber,jdbcType=VARCHAR},
+	      #{item.clientName,jdbcType=VARCHAR}, #{item.sysVersion,jdbcType=VARCHAR}, #{item.clientVersion,jdbcType=VARCHAR},
+	      #{item.hardware,jdbcType=VARCHAR}, #{item.registerCode,jdbcType=VARCHAR}, #{item.light,jdbcType=TINYINT},
+	      #{item.voice,jdbcType=TINYINT}, #{item.cpuTemp,jdbcType=DOUBLE}, #{item.diskSpace,jdbcType=DECIMAL},
+	      #{item.diskFreeSpace,jdbcType=DECIMAL}, #{item.expireFileNum,jdbcType=INTEGER}, #{item.playFileNum,jdbcType=INTEGER},
+	      #{item.playProgramNum,jdbcType=INTEGER}, #{item.phoneNumber,jdbcType=VARCHAR}, #{item.ftpId,jdbcType=INTEGER},
+	      #{item.mediaIp},#{item.createTime},#{item.adStatus},#{item.adDelete}
+	      )
+	</foreach>
+
+  </insert>
+  <!--  删除终端  -->
+  <delete id="deleteByMids" >
+    delete from fb_media_attribute
+    where mid in (
+    	<foreach collection="array" item="mid" separator=",">
+			#{mid}
+		</foreach>
+    )
+  </delete>
+  <!-- 修改删除标志 -->
+  <update id="updateIsDelete" >
+  	update fb_media_attribute set ad_delete =0 where mid in (
+    	<foreach collection="array" item="mid" separator=",">
+			#{mid}
+		</foreach>
+    )
+  </update>
+  <!-- 修改工作标志 -->
+  <update id="updateWorkStatus" parameterType="map" >
+  	update fb_media_attribute set work_status = #{workStatus} where machine_code in (
+    	<foreach collection="machineCode" item="item" separator=",">
+			#{item}
+		</foreach>
+    )
+  </update>
+  <!-- 修改ftp -->
+  <update id="updateFtp" parameterType="map" >
+  	update fb_media_attribute set ftp_id = #{ftpId} where mid in (
+    	<foreach collection="mids" item="item" separator=",">
+			#{item}
+		</foreach>
+    )
+  </update>
+   <!-- 修改状态标志 -->
+  <update id="updateAdStatus" parameterType="MediaAttributeModel">
+  	update fb_media_attribute set ad_status =#{adStatus} where machine_code = #{machineCode}
+  </update>
+  <update id="updateAdStatusByConf" parameterType="map">
+  	update fb_media_attribute set ad_status =#{adStatus}
+  	<where>
+  		ad_delete = 1
+  		<if test="machineCode != null">
+  			and machine_code in (
+  			<foreach collection="machineCode" item="item" separator=",">
+				#{item}
+			</foreach>
+			)
+  		</if>
+  		<if test="useStatus != null">
+
+  			<choose>
+  				<when test="useStatus=='offline'">and ad_status in (1,-2)</when>
+  				<otherwise>and ad_status &gt;= 0</otherwise>
+  			</choose>
+  		</if>
+  	</where>
+  </update>
+   <!-- 修改下载进度 -->
+  <update id="updateDownloadProgress" parameterType="MediaAttributeModel">
+  	update fb_media_attribute set download_progress =#{downloadProgress} where machine_code = #{machineCode}
+  </update>
+  <!-- 修改终端测速 -->
+  <update id="updateMediaNetSpeed" parameterType="map">
+  	update fb_media_attribute set net_speed = #{netSpeed},test_speed_time=#{testSpeedTime} where machine_code = #{machineCode}
+  </update>
+
+ <!--   验证终端编号的唯一性 -->
+  <select id="selectByClientNumber" resultType="map">
+  	select client_number as clientNumber from fb_media_attribute where client_number in (
+    	<foreach collection="array" item="clientNumber" separator=",">
+			#{clientNumber}
+		</foreach>
+    ) order by mid desc
+  </select>
+  <!--  统计在线情况 -->
+  <select id="getOnlineStatistics" resultType="map">
+    SELECT
+		a.ad_status as adStatus,
+		COUNT(a.mid) AS num
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+	<where>
+		a.ad_delete = 1
+		<if test="uid != null and uid > 0 ">
+			and b.media_group_id in (select media_group_id from fb_sysuser_mediagroup where uid=#{uid})
+		</if>
+		GROUP BY a.ad_status
+	</where>
+
+   <!--  SELECT
+		SUM(a.totalClient) AS totalClient,
+		SUM(a.onClient) AS onClient,
+		SUM(a.offClient) AS offClient
+	FROM
+		(
+			(SELECT
+				count(a.mid) AS totalClient,
+				0 AS onClient,
+				0 AS offClient
+			FROM
+				fb_media_attribute a
+			LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+			<where>
+				ad_delete = 1
+				<if test="uid != null and uid > 0 ">
+					and b.media_group_id in (select media_group_id from fb_sysuser_mediagroup where uid=#{uid})
+				</if>
+			</where>
+				)
+			UNION ALL
+				(SELECT
+					0 AS totalClient,
+					count(a.mid) AS onClient,
+					0 AS offClient
+				FROM
+					fb_media_attribute a
+				LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+				<where>
+					ad_delete = 1 AND ad_status = 1
+					<if test="uid != null and uid > 0 ">
+						and b.media_group_id in (select media_group_id from fb_sysuser_mediagroup where uid=#{uid})
+					</if>
+				</where>
+				)
+			UNION ALL
+					(SELECT
+						0 AS totalClient,
+						0 AS onClient,
+						count(a.mid) AS offClient
+					FROM
+						fb_media_attribute a
+					LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+					<where>
+						ad_delete = 1 AND ad_status = 0
+						<if test="uid != null and uid > 0 ">
+							and b.media_group_id in (select media_group_id from fb_sysuser_mediagroup where uid=#{uid})
+						</if>
+					</where>
+					)
+	) a -->
+  </select>
+  <!-- 根据终端id查询详细信息 -->
+  <select id="selectByPrimaryKeys"  resultType="map">
+	<!-- SELECT
+		a.mid,
+		a.machine_code as machineCode,
+		a.client_number AS clientNumber,
+		a.client_name AS clientName,
+		a.sys_version AS sysVersion,
+		a.client_version AS clientVersion,
+		a.hardware,
+		a.register_code AS registerCode,
+		a.light,
+		a.voice,
+		a.max_voice as maxVoice,
+		a.cpu_temp AS cpuTemp,
+		a.disk_space AS diskSpace,
+		a.disk_free_space AS diskFreeSpace,
+		a.expire_file_num AS expireFileNum,
+		a.play_file_num AS playFileNum,
+		a.play_program_num AS playProgramNum,
+		a.phone_number AS phoneNumber,
+		a.ftp_id AS ftpId,
+		bb.ip_addr as ipAddr,
+		a.download_start_time AS downloadStartTime,
+		a.download_end_time AS downloadEndTime,
+	    a.clean_file_day AS cleanFileDay,
+		a.media_ip AS mediaIp,
+		a.create_time AS createTime,
+		a.ad_status AS adStatus,
+		c.media_group_name AS mediaGroupName,
+	  	c.media_group_id AS mediaGroupId,
+	  	bb.preview_path as previewPath,
+		bb.preview_port as previewPort,
+		a.work_start_time as workStartTime,
+		a.work_end_time as workEndTime,
+		a.connect_addr as connectAddr
+	FROM
+		fb_media_attribute a left join fb_ftp_info bb on a.ftp_id=bb.ftp_id
+	LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+	LEFT JOIN fb_media_group c ON b.media_group_id = c.media_group_id -->
+	SELECT
+		a.mid,
+		a.machine_code as machineCode,
+		a.client_number AS clientNumber,
+		a.client_name AS clientName,
+		a.sys_version AS sysVersion,
+		a.client_version AS clientVersion,
+		a.hardware,
+		a.register_code AS registerCode,
+		a.light,
+		a.voice,
+		a.max_voice as maxVoice,
+		a.cpu_temp AS cpuTemp,
+		a.disk_space AS diskSpace,
+		a.disk_free_space AS diskFreeSpace,
+		a.expire_file_num AS expireFileNum,
+		a.play_file_num AS playFileNum,
+		a.play_program_num AS playProgramNum,
+		a.phone_number AS phoneNumber,
+		a.ftp_id AS ftpId,
+		a.download_start_time AS downloadStartTime,
+		a.download_end_time AS downloadEndTime,
+	    a.clean_file_day AS cleanFileDay,
+		a.media_ip AS mediaIp,
+		a.create_time AS createTime,
+		a.ad_status AS adStatus,
+		a.work_start_time as workStartTime,
+		a.work_end_time as workEndTime,
+		c.media_group_name AS mediaGroupName,
+		b.media_group_id as mediaGroupId,
+		a.net_type as netType,
+		a.client_version AS clientVersion,
+		a.last_receive_time AS lastReceiveTime,
+		a.download_progress as downloadProgress,
+		a.dog_version as dogVersion,
+		f.ip_addr as ipAddr,
+		f.ftp_id as ftpId,
+		f.preview_path as previewPath,
+		f.preview_port as previewPort,
+		i.iccid,
+		i.imsi,
+		i.cur_data_usage as curDataUsage,
+		i.card_status as cardStatus,
+		i.iot_type as iotType,
+		a.video_out_mode as videoOutMode,
+		a.net_speed as netSpeed,
+		a.test_speed_time as testSpeedTime,
+		a.connect_addr as connectAddr,
+		a.work_status as workStatus,
+		a.record_screen_info as recordScreenInfo
+	FROM
+		fb_media_attribute a LEFT JOIN fb_ftp_info f on a.ftp_id=f.ftp_id
+	LEFT JOIN fb_iot_media_attribute i on a.machine_code=i.machine_code and i.is_main=1
+	LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+	LEFT JOIN fb_media_group c ON b.media_group_id = c.media_group_id
+	WHERE a.mid in (
+	<foreach collection="array" item="item" separator=",">
+		#{item}
+	</foreach>
+	)
+  </select>
+  <!-- 根据多个终端id查询详细信息  分页-->
+  <select id="selectPageByPrimaryKeys"  resultType="map" parameterType="map">
+  	SELECT
+		a.mid,
+		a.machine_code as machineCode,
+		a.client_number AS clientNumber,
+		a.client_name AS clientName,
+		a.sys_version AS sysVersion,
+		a.client_version AS clientVersion,
+		a.hardware,
+		a.register_code AS registerCode,
+		a.light,
+		a.voice,
+		a.max_voice as maxVoice,
+		a.cpu_temp AS cpuTemp,
+		a.disk_space AS diskSpace,
+		a.disk_free_space AS diskFreeSpace,
+		a.expire_file_num AS expireFileNum,
+		a.play_file_num AS playFileNum,
+		a.play_program_num AS playProgramNum,
+		a.phone_number AS phoneNumber,
+		a.ftp_id AS ftpId,
+		a.download_start_time AS downloadStartTime,
+		a.download_end_time AS downloadEndTime,
+	    a.clean_file_day AS cleanFileDay,
+		a.media_ip AS mediaIp,
+		a.create_time AS createTime,
+		a.ad_status AS adStatus,
+		c.media_group_name AS mediaGroupName,
+	  	c.media_group_id AS mediaGroupId
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+	LEFT JOIN fb_media_group c ON b.media_group_id = c.media_group_id
+	<where>
+		a.ad_delete=1 and a.mid in (
+		<foreach collection="mids" item="item" separator=",">
+			#{item}
+		</foreach>
+		)
+		<if test="clientName !=null and clientName != '' ">
+			and a.client_name like concat('%',#{clientName},'%')
+		</if>
+		order by a.mid asc limit #{startRow},#{pageSize}
+	</where>
+  </select>
+  <select id="selectPageByPrimaryKeysCount"  resultType="java.lang.Integer" parameterType="map">
+  	SELECT
+		count(a.mid)
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+	LEFT JOIN fb_media_group c ON b.media_group_id = c.media_group_id
+	<where>
+		a.ad_delete=1 and a.mid in (
+		<foreach collection="mids" item="item" separator=",">
+			#{item}
+		</foreach>
+		)
+		<if test="clientName !=null and clientName != '' ">
+		and a.client_name like concat('%',#{clientName},'%')
+		</if>
+	</where>
+  </select>
+
+
+  <!--  修改详细信息 -->
+  <update id="updateMedia" parameterType="MediaAttributeModel">
+	update fb_media_attribute
+	 set
+	   client_name = #{clientName,jdbcType=VARCHAR},
+	  <if test="light != null">
+        light = #{light,jdbcType=TINYINT},
+      </if>
+      <if test="voice != null">
+        voice = #{voice,jdbcType=TINYINT},
+      </if>
+      <if test="downloadStartTime != null">
+      	download_start_time = #{downloadStartTime},
+      </if>
+      <if test="downloadEndTime != null">
+      	download_end_time =#{downloadEndTime},
+      </if>
+      <if test="ftpId != null and ftpId > 0">
+	   	ftp_id = #{ftpId,jdbcType=INTEGER},
+	   </if>
+	   <if test="netType != null and netType > 0">
+	   	net_type = #{netType},
+	   </if>
+	   <if test="workStartTime != null">
+	   	work_start_time = #{workStartTime},
+	   </if>
+	   <if test="workEndTime != null">
+	   	work_end_time = #{workEndTime},
+	   </if>
+	   clean_file_day = #{cleanFileDay}
+	where mid = #{mid,jdbcType=INTEGER}
+  </update>
+  <!--   根据终端组id查询终端信息 -->
+  <select id="selectMediaByGroupId" resultType="map" parameterType="map">
+	  SELECT
+			a.media_group_id AS mediaGroupId,
+			a.media_group_name AS mediaGroupName,
+			a.parent_id as parentId,
+			c.mid,
+			c.machine_code as machineCode,
+			c.client_number AS clientNumber,
+			c.client_name AS clientName,
+			d.led_screen_type as ledScreenType,
+			d.max_num AS maxNum
+		FROM
+			fb_media_group a
+			LEFT JOIN fb_media_group_relation b ON a.media_group_id = b.media_group_id
+			LEFT JOIN fb_media_attribute c ON b.mid = c.mid
+			left JOIN fb_led_media_attribute d on c.machine_code=d.machine_code
+		<where>
+			a.media_group_id in (
+			<foreach collection="mediaGroupIds" item="item" separator=",">
+				#{item}
+			</foreach>
+			) and c.mid is not null
+			<if test="ledSize != null">
+		 		and d.led_size = #{ledSize}
+			</if>
+		</where>
+  </select>
+  <!--   条件查询 不分页 -->
+  <select id="selectByCondition" parameterType="map" resultType="map">
+  		SELECT
+		a.mid,
+		a.machine_code as machineCode,
+		a.client_number AS clientNumber,
+		a.client_name AS clientName,
+		a.ad_status as adStatus,
+		a.sys_version AS sysVersion,
+		a.client_version AS clientVersion,
+		a.media_ip as mediaIp,
+		a.work_start_time as workStartTime,
+		a.work_end_time as workEndTime,
+		a.play_program_num as playProgramNum
+		FROM
+		fb_media_attribute a
+		<where>
+			<if test="machineCode != null and machineCode != ''">
+				and a.machine_code = #{machineCode}
+			</if>
+			<if test="workStatus != null ">
+				and a.work_status = #{workStatus}
+			</if>
+			<if test="getSpanDaysWorkMedia != null"><!-- 获取工作时长为跨天的媒体机 -->
+				and work_start_time is not null and work_start_time &gt; work_end_time
+			</if>
+			<if test="adStatus != null and adStatus !='' ">
+				and a.ad_status = #{adStatus}
+			</if>
+		</where>
+  </select>
+
+  <!--  根据机器码修改数据 -->
+  <update id="updateByCode" parameterType="MediaAttributeModel">
+	update fb_media_attribute
+	 set
+	   client_number = #{clientNumber},
+	   media_ip = #{mediaIp},
+	   ad_status =#{adStatus},
+	   ad_delete = #{adDelete},
+	   <if test="playProgramNum != null">
+	   	play_program_num = #{playProgramNum},
+	   </if>
+	   last_receive_time=#{lastReceiveTime}
+	where machine_code = #{machineCode}
+  </update>
+ <!--  根据机器码查询终端配置信息及ftp详细信息 -->
+  <select id="selectAllConfByMachineCode" resultType="map" parameterType="java.lang.String">
+	  	SELECT
+			a.mid,
+			a.machine_code as machineCode,
+			a.client_number AS clientNumber,
+			a.sys_version AS sysVersion,
+			a.client_version AS clientVersion,
+			a.hardware,
+			a.light,
+			a.voice,
+			a.max_voice as maxVoice,
+			a.cpu_temp AS cpuTemp,
+			a.disk_space AS diskSpace,
+			a.disk_free_space AS diskFreeSpace,
+			a.expire_file_num AS expireFileNum,
+			a.play_file_num AS playFileNum,
+			a.play_program_num AS playProgramNum,
+			b.ftp_id as ftpId,
+			b.ip_addr as ftpIp,
+		    b.port as ftpPort,
+		    b.ftp_user as ftpUser,
+		    b.ftp_pwd as ftpPwd,
+		    b.ftp_type as ftpType,
+		    b.bucket_name as bucketName,
+		    b.preview_path as previewPath,
+		    b.preview_port as previewPort,
+		    b.open_http as openHttp
+		FROM
+				fb_media_attribute a
+			LEFT JOIN fb_ftp_info b ON a.ftp_id = b.ftp_id
+		where a.machine_code = #{machineCode}
+  </select>
+  <!--   修改所有配置信息 -->
+  <update id="updateAllConfByMachineCode" parameterType="ClientConfRespose">
+    update fb_media_attribute
+    set
+      client_number = #{clientNumber,jdbcType=VARCHAR},
+      sys_version = #{sysVersion,jdbcType=VARCHAR},
+      client_version = #{clientVersion,jdbcType=VARCHAR},
+      hardware = #{hardware,jdbcType=VARCHAR},
+      light = #{light,jdbcType=TINYINT},
+      voice = #{voice,jdbcType=TINYINT},
+      max_voice = #{maxVoice,jdbcType=TINYINT},
+      cpu_temp = #{cpuTemp,jdbcType=DOUBLE},
+      disk_space = #{diskSpace,jdbcType=DECIMAL},
+      disk_free_space = #{diskFreeSpace,jdbcType=DECIMAL},
+      expire_file_num = #{expireFileNum,jdbcType=INTEGER},
+      play_file_num = #{playFileNum,jdbcType=INTEGER},
+      play_program_num = #{playProgramNum,jdbcType=INTEGER},
+      ftp_id = #{ftpId,jdbcType=INTEGER},
+      dog_version = #{dogVersion},
+      connect_addr = #{connectAddr},
+      video_out_mode = #{videoOutMode},
+      record_screen_info = #{recordScreenInfo}
+    where machine_code = #{machineCode,jdbcType=VARCHAR}
+  </update>
+  <select id="selectMaxNumber" resultType="map">
+  	SELECT
+		mid,
+		machine_code AS machineCode,
+		client_number AS clientNumber
+	FROM
+		fb_media_attribute
+	WHERE
+		client_number LIKE concat(#{prefix},'%')
+	ORDER BY mid DESC LIMIT 0,1
+  </select>
+  <!-- 对接选点平台接口 档期数据 -->
+  <select id="selectMediaProgram" parameterType="map" resultType="map">
+  	select aa.*,if(aa.programNum > 12,0,(12-aa.programNum)) as lackNum,12 as maxProgramNum from (
+		SELECT
+			a.mid,a.machine_code,a.client_number,a.client_name,count(c.publish_id) as programNum
+		FROM
+			fb_media_attribute a
+		LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+		LEFT JOIN fb_program_publish_record c ON b.media_group_id = c.media_group_id
+		where a.ad_delete=1
+		<if test="mids != null">
+			and a.mid in (
+				<foreach collection="mids" item="item" separator=",">
+					#{item}
+				</foreach>
+			)
+		</if>
+		<if test="clientName != null and clientName != ''">
+			and a.client_name like concat('%',#{clientName},'%')
+		</if>
+		GROUP BY a.mid ORDER BY a.mid desc
+	) aa
+  </select>
+
+  <!--   根据ftpid查询终端 -->
+  <select id="selectByFtpId" parameterType="java.lang.Integer" resultType="map">
+  	SELECT
+		b.mid,
+		b.machine_code AS machineCode,
+		b.light,
+		b.voice
+	FROM
+		fb_ftp_info a
+	LEFT JOIN fb_media_attribute b ON a.ftp_id = b.ftp_id
+	WHERE
+		a.ftp_id = #{ftpId}
+  </select>
+
+ <!--   根据机器码查询终端及终端组信息 -->
+ <select id="selectGroupIdByMachineCodes"  resultType="map">
+  	SELECT
+		a.machine_code as machineCode,
+		a.mid,
+		a.client_name as clientName,
+		a.ad_status as adStatus,
+		b.media_group_id AS mediaGroupId,
+		c.media_group_name as mediaGroupName
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+	left join fb_media_group c on b.media_group_id = c.media_group_id
+	WHERE
+		a.machine_code in (
+		<foreach collection="array" item="item" separator=",">
+			#{item}
+		</foreach>
+		)
+  </select>
+
+  <!-- 根据机器码查询需要发送通知的用户 -->
+  <select id="selectNoticeUserByMachineCodes" resultType="map" parameterType="map">
+  SELECT
+		a.machine_code as machineCode,
+		a.mid,
+		a.client_name as clientName,
+		a.ad_status as adStatus,
+		b.media_group_id AS mediaGroupId,
+		c.media_group_name as mediaGroupName,
+		d.uid
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+	left join fb_media_group c on b.media_group_id = c.media_group_id
+    left join fb_sysuser_mediagroup d on b.media_group_id = d.media_group_id
+	LEFT JOIN fb_sys_user e on d.uid=e.uid
+	<where>
+		a.machine_code in (
+		<foreach collection="machineCodes" item="item" separator=",">
+			#{item}
+		</foreach>
+		)
+		<if test="warnNotice != null">
+			and e.warn_notice=#{warnNotice}
+		</if>
+		<choose>
+			<when test="isAdmin != null and isAdmin == 1">and e.u_group_id = -1</when>
+			<when test="isAdmin != null and isAdmin == 0">and e.u_group_id != -1</when>
+			<otherwise></otherwise>
+		</choose>
+	</where>
+	ORDER BY d.uid asc
+  </select>
+
+ <!--   批量更新最后通信时间 -->
+  <update id="batchUpdateLastTime" parameterType="java.util.List">
+        update fb_media_attribute
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="last_receive_time = case" suffix="end,">
+                 <foreach collection="list" item="item" index="index">
+                     <if test="item.lastReceiveTime !=null">
+                         when machine_code=#{item.machineCode} then #{item.lastReceiveTime}
+                     </if>
+                 </foreach>
+            </trim>
+        </trim>
+        where machine_code in
+        <foreach collection="list" index="index" item="item" separator="," open="(" close=")">
+            #{item.machineCode}
+        </foreach>
+   </update>
+
+  <!--  离线时长统计 -->
+  <select id="selectPageOfflineMedia" resultType="map" parameterType="map">
+  	SELECT
+		a.client_number as clientNumber,
+		a.client_name AS clientName,
+		c.media_group_name AS mediaGroupName,
+		TIMESTAMPDIFF(
+			SECOND,
+			a.last_receive_time,
+			NOW()
+		) AS TimeDiff,
+		a.last_receive_time as lastReceiveTime
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+	LEFT JOIN fb_media_group c ON b.media_group_id = c.media_group_id
+	<where>
+		a.ad_status = 0 AND a.ad_delete = 1
+		<if test="uid != null and uid > 0 ">
+			and c.media_group_id in (select media_group_id from fb_sysuser_mediagroup where uid=#{uid})
+		</if>
+	</where>
+	ORDER BY a.last_receive_time DESC,a.mid DESC limit #{startRow},#{pageSize}
+  </select>
+  <select id="selectPageOfflineMediaCount" resultType="java.lang.Integer" parameterType="map">
+  	SELECT
+		count(a.client_number)
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+	LEFT JOIN fb_media_group c ON b.media_group_id = c.media_group_id
+	<where>
+		a.ad_status = 0 AND a.ad_delete = 1
+		<if test="uid != null and uid > 0 ">
+			and c.media_group_id in (select media_group_id from fb_sysuser_mediagroup where uid=#{uid})
+		</if>
+	</where>
+  </select>
+
+  <!-- 用于同步redis中的数据 -->
+  <select id="selectMediaForRedis"  resultType="map" parameterType="map">
+  	SELECT
+		a.mid,
+		a.machine_code as machineCode,
+		a.client_number AS clientNumber,
+		a.last_receive_time as lastReceiveTime,
+		a.media_ip as mediaIp
+	FROM
+		fb_media_attribute a
+	<where>
+		a.ad_delete=1
+	</where>
+  </select>
+
+  <!-- 根据用户id与终端组id分页查询终端 -->
+  <select id="selectPageMediaByUids" parameterType="map" resultType="map">
+  	SELECT
+		a.uid,
+		a.media_group_id as mediaGroupId,
+		aaa.user_name as userName,
+		aa.media_group_name AS mediaGroupName,
+		b.mid,
+		c.mid AS cmid,
+		c.machine_code AS machineCode,
+		c.client_name AS clientName
+	FROM
+		fb_sysuser_mediagroup a LEFT JOIN fb_sys_user aaa on a.uid=aaa.uid
+	LEFT JOIN fb_media_group aa ON a.media_group_id = aa.media_group_id
+	LEFT JOIN fb_media_group_relation b ON a.media_group_id = b.media_group_id
+	LEFT JOIN fb_media_attribute c ON b.mid = c.mid
+	<where>
+		<if test="uids != null">
+			a.uid in (
+			<foreach collection="uids" item="item" separator=",">
+				#{item}
+			</foreach>
+			)
+		</if>
+		<if test="uids == null">
+			a.uid IN (
+			SELECT
+				bb.uid
+			FROM
+				pr_roles aa
+			LEFT JOIN pr_user_roles bb ON aa.role_id = bb.role_id
+			WHERE
+				aa.role_name = '巡视员'
+			)
+		</if>
+		<if test="mediaGroupIds != null">
+			and a.media_group_id in (
+			<foreach collection="mediaGroupIds" item="item" separator=",">
+				#{item}
+			</foreach>
+			)
+		</if>
+
+		and c.mid is not null ORDER BY a.uid,a.media_group_id ASC
+		<if test="isPage != null">
+			limit #{startRow},#{pageSize}
+		</if>
+	</where>
+  </select>
+  <select id="selectPageMediaByUidsCount" parameterType="map" resultType="java.lang.Integer">
+  	SELECT
+		count(a.uid)
+	FROM
+		fb_sysuser_mediagroup a LEFT JOIN fb_sys_user aaa on a.uid=aaa.uid
+	LEFT JOIN fb_media_group aa ON a.media_group_id = aa.media_group_id
+	LEFT JOIN fb_media_group_relation b ON a.media_group_id = b.media_group_id
+	LEFT JOIN fb_media_attribute c ON b.mid = c.mid
+	<where>
+		<if test="uids != null">
+			a.uid in (
+			<foreach collection="uids" item="item" separator=",">
+				#{item}
+			</foreach>
+			)
+		</if>
+		<if test="uids == null">
+			a.uid IN (
+			SELECT
+				bb.uid
+			FROM
+				pr_roles aa
+			LEFT JOIN pr_user_roles bb ON aa.role_id = bb.role_id
+			WHERE
+				aa.role_name = '巡视员'
+			)
+		</if>
+		and a.media_group_id in (
+		<foreach collection="mediaGroupIds" item="item" separator=",">
+			#{item}
+		</foreach>
+		)
+		and c.mid is not null
+	</where>
+  </select>
+
+</mapper>

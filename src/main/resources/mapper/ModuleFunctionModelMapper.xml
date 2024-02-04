@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.ModuleFunctionDao" >
+  <resultMap id="BaseResultMap" type="ModuleFunctionModel" >
+    <id column="function_id" property="functionId" jdbcType="INTEGER" />
+    <result column="module_id" property="moduleId" jdbcType="INTEGER" />
+    <result column="function_name" property="functionName" jdbcType="VARCHAR" />
+    <result column="function_introduce" property="functionIntroduce" jdbcType="VARCHAR" />
+    <result column="function_code" property="functionCode" jdbcType="VARCHAR" />
+    <result column="function_url" property="functionUrl" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="is_delete" property="isDelete" jdbcType="TINYINT" />
+  </resultMap>
+
+  <!-- 根据多个角色id查询权限的合集 -->
+  <select id="selectByRoleIds" resultMap="BaseResultMap">
+  	SELECT
+		b.*
+	FROM
+		pr_roles_function a
+	LEFT JOIN pr_module_function b ON a.function_id = b.function_id
+	WHERE
+		role_id IN (
+		<foreach collection="array" separator="," item="item">
+			#{item}
+		</foreach>
+		) and b.is_delete=1
+	GROUP BY b.function_id
+  </select>
+
+</mapper>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.SysuserMediagroupDao" >
+<!--  <resultMap id="BaseResultMap" type="SysuserMediagroupModel" >
+    <result column="uid" property="uid" jdbcType="INTEGER" />
+    <result column="media_group_id" property="mediaGroupId" jdbcType="INTEGER" />
+    <result column="is_all" property="isAll" jdbcType="TINYINT" />
+  </resultMap>-->
+
+  <!--   批量添加 -->
+  <insert id="batchInsert" parameterType="SysuserMediagroupModel" >
+    insert into fb_sysuser_mediagroup (uid, media_group_id, is_all)
+    values
+    <foreach collection="list" item="item" separator=",">
+    	(#{item.uid,jdbcType=INTEGER}, #{item.mediaGroupId,jdbcType=INTEGER}, #{item.isAll,jdbcType=TINYINT})
+    </foreach>
+  </insert>
+
+  <!-- 根据用户id删除数据 -->
+  <delete id="deleteByUid" >
+  	delete from fb_sysuser_mediagroup where uid in (
+  	<foreach collection="array" item="item" separator=",">
+  		#{item}
+  	</foreach>
+  	)
+  </delete>
+
+ <!--  根据用户组id、多个终端组id按条件删除 -->
+ <delete id="deleteMediaGroupByUserGroup" parameterType="map">
+ 	delete from fb_sysuser_mediagroup where uid in (select uid from fb_sys_user where u_group_id = #{uGroupId}) and media_group_id in (
+ 	<foreach collection="mediaGroupIds" item="item" separator=",">
+ 		#{item}
+ 	</foreach>
+ 	)
+ </delete>
+
+  <!-- 根据用户id查询分组信息 -->
+  <select id="selectByUid" parameterType="java.lang.Integer" resultType="map">
+  	select uid,media_group_id as mediaGroupId,is_all AS isAll from fb_sysuser_mediagroup where uid = #{uid}
+  </select>
+
+  <!-- 根据用户id查询  用户是否管理所有分组 -->
+  <select id="selectIsallByUid" parameterType="java.lang.Integer" resultType="map">
+  	select uid,media_group_id as mediaGroupId,is_all AS isAll from fb_sysuser_mediagroup where uid = #{uid} and is_all = 1
+  </select>
+
+  <!-- 根据终端组id 删除信息 -->
+  <delete id="deleteByMediaGroupIds" >
+  	delete from fb_sysuser_mediagroup where media_group_id in (
+  	<foreach collection="array" separator="," item="item">
+  		#{item}
+  	</foreach>
+  	)
+  </delete>
+
+  <!-- 根据终端组id查所属的用户信息 -->
+  <select id="selectByMediaGroupId" parameterType="java.lang.Integer" resultType="map">
+  	<!-- select uid,media_group_id as mediaGroupId from fb_sysuser_mediagroup where media_group_id = #{mediaGroupId} -->
+  	select a.uid,a.media_group_id as mediaGroupId from fb_sysuser_mediagroup a LEFT JOIN fb_sys_user b on a.uid=b.uid where media_group_id = #{mediaGroupId} and b.is_sync_user_group=1
+  </select>
+
+
+
+
+</mapper>

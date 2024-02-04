@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.IotMediaAttributeDao" >
+
+  <!-- 分页查询 -->
+  <select id="selectPage" parameterType="map" resultType="map">
+  	SELECT
+		a.client_number AS clientNumber,
+		a.client_name AS clientName,
+		a.media_ip AS mediaIp,
+		a.play_program_num AS playProgramNum,
+		a.ad_status AS adStatus,
+		a.light,
+		a.voice,
+		a.cpu_temp AS cpuTemp,
+		a.client_version AS clientVersion,
+		a.disk_free_space AS diskFreeSpace,
+		a.create_time AS createTime,
+		a.last_receive_time AS lastReceiveTime,
+		a.machine_code AS machineCode,
+		a.mid,
+		a.download_progress as downloadProgress,
+		a.dog_version as dogVersion,
+		b.iccid,
+		b.imsi,
+		b.access_number as accessNumber,
+		b.iot_type as iotType,
+		b.cur_data_usage as curDataUsage,
+		b.total_data_usage as totalDataUsage,
+		b.card_type as cardType,
+		b.card_status as cardStatus,
+		b.create_time AS createTime1,
+		b.is_main AS isMain,
+		b.iccid_update_type as iccidUpdateType
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_iot_media_attribute b ON a.machine_code = b.machine_code
+	<where>
+		b.is_delete=1 and b.is_main=1
+		<if test="clientName != null and clientName !='' ">
+			and a.client_name like concat('%',#{clientName},'%')
+		</if>
+		<if test="clientNumber != null and clientNumber !='' ">
+			and a.client_number like concat('%',#{clientNumber},'%')
+		</if>
+		<if test="adStatus != null and adStatus !='' ">
+			and a.ad_status = #{adStatus}
+		</if>
+		<if test="iccid !=null and iccid !='' ">
+			and b.iccid = #{iccid}
+		</if>
+		<if test="imsi !=null and imsi !='' ">
+			and b.imsi = #{imsi}
+		</if>
+		<if test="iotType !=null">
+			and b.iot_type = #{iotType}
+		</if>
+		<if test="curDataUsage !=null">
+			and b.cur_data_usage &gt; #{curDataUsage}
+		</if>
+		<if test="cardStatus !=null">
+			and b.card_status = #{cardStatus}
+		</if>
+	</where>
+	order by b.create_time desc limit #{startRow},#{pageSize}
+  </select>
+   <select id="selectPageCount" parameterType="map" resultType="java.lang.Integer">
+  	SELECT
+		count(*)
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_iot_media_attribute b ON a.machine_code = b.machine_code
+	<where>
+		b.is_delete=1 and b.is_main=1
+		<if test="clientName != null and clientName !='' ">
+			and a.client_name like concat('%',#{clientName},'%')
+		</if>
+		<if test="clientNumber != null and clientNumber !='' ">
+			and a.client_number like concat('%',#{clientNumber},'%')
+		</if>
+		<if test="adStatus != null and adStatus !='' ">
+			and a.ad_status = #{adStatus}
+		</if>
+		<if test="iccid !=null and iccid !='' ">
+			and b.iccid = #{iccid}
+		</if>
+		<if test="imsi !=null and imsi !='' ">
+			and b.imsi = #{imsi}
+		</if>
+		<if test="iotType !=null">
+			and b.iot_type = #{iotType}
+		</if>
+		<if test="curDataUsage !=null">
+			and b.cur_data_usage &gt; #{curDataUsage}
+		</if>
+		<if test="cardStatus !=null">
+			and b.card_status = #{cardStatus}
+		</if>
+	</where>
+  </select>
+
+  <!-- 根据机器码查询 -->
+  <select id="selectByIccid" parameterType="java.lang.String" resultType="map">
+  	SELECT
+		a.client_number AS clientNumber,
+		a.client_name AS clientName,
+		a.media_ip AS mediaIp,
+		a.play_program_num AS playProgramNum,
+		a.ad_status AS adStatus,
+		a.light,
+		a.voice,
+		a.cpu_temp AS cpuTemp,
+		a.client_version AS clientVersion,
+		a.disk_free_space AS diskFreeSpace,
+		a.create_time AS createTime,
+		a.last_receive_time AS lastReceiveTime,
+		a.machine_code AS machineCode,
+		a.mid,
+		a.download_progress as downloadProgress,
+		a.dog_version as dogVersion,
+		b.iccid,
+		b.imsi,
+		b.access_number as accessNumber,
+		b.iot_type as iotType,
+		b.cur_data_usage as curDataUsage,
+		b.total_data_usage as totalDataUsage,
+		b.card_type as cardType,
+		b.card_status as cardStatus,
+		b.create_time AS createTime1,
+		b.is_main AS isMain,
+		b.iccid_update_type as iccidUpdateType
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_iot_media_attribute b ON a.machine_code = b.machine_code where b.iccid= #{iccid}
+  </select>
+
+  <!-- 根据机器码查询 -->
+  <select id="selectByMachineCode" parameterType="java.lang.String" resultType="map">
+  	SELECT
+		a.client_number AS clientNumber,
+		a.client_name AS clientName,
+		a.media_ip AS mediaIp,
+		a.play_program_num AS playProgramNum,
+		a.ad_status AS adStatus,
+		a.light,
+		a.voice,
+		a.cpu_temp AS cpuTemp,
+		a.client_version AS clientVersion,
+		a.disk_free_space AS diskFreeSpace,
+		a.create_time AS createTime,
+		a.last_receive_time AS lastReceiveTime,
+		a.machine_code AS machineCode,
+		a.mid,
+		a.download_progress as downloadProgress,
+		a.dog_version as dogVersion,
+		b.iccid,
+		b.imsi,
+		b.access_number as accessNumber,
+		b.iot_type as iotType,
+		b.cur_data_usage as curDataUsage,
+		b.total_data_usage as totalDataUsage,
+		b.card_type as cardType,
+		b.card_status as cardStatus,
+		b.create_time AS createTime1,
+		b.is_main AS isMain,
+		b.iccid_update_type as iccidUpdateType
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_iot_media_attribute b ON a.machine_code = b.machine_code where b.machine_code= #{machineCode}
+  </select>
+
+  <!--   添加 -->
+  <insert id="insert" parameterType="IotMediaAttributeModel" >
+    insert into fb_iot_media_attribute (machine_code, iccid, imsi,
+      access_number, iot_type, cur_data_usage,
+      total_data_usage, card_type, card_status,
+      create_time, remark, is_main,iccid_update_type
+      )
+    values (#{machineCode,jdbcType=VARCHAR}, #{iccid,jdbcType=VARCHAR}, #{imsi,jdbcType=VARCHAR},
+      #{accessNumber,jdbcType=VARCHAR}, #{iotType,jdbcType=TINYINT}, #{curDataUsage,jdbcType=BIGINT},
+      #{totalDataUsage,jdbcType=BIGINT}, #{cardType,jdbcType=VARCHAR}, #{cardStatus,jdbcType=TINYINT},
+      #{createTime,jdbcType=TIMESTAMP}, #{remark,jdbcType=VARCHAR}, #{isMain,jdbcType=TINYINT},#{iccidUpdateType}
+      )
+  </insert>
+
+  <!-- 更新流量信息 -->
+  <update id="updateData" parameterType="IotMediaAttributeModel" >
+  	update fb_iot_media_attribute
+  	set
+  		imsi = #{imsi},
+  		access_number = #{accessNumber},
+  		cur_data_usage = #{curDataUsage},
+  		total_data_usage = #{totalDataUsage},
+  		card_status = #{cardStatus}
+  	WHERE iccid = #{iccid}
+  </update>
+
+
+  <!-- 更改终端绑定 -->
+  <update id="updateMachineCode" parameterType="map" >
+  	update fb_iot_media_attribute
+  	set
+  		machine_code = #{machineCode}
+  	WHERE iccid = #{iccid}
+  </update>
+  <!-- 更改终端绑定 -->
+  <update id="updateIccid" parameterType="map" >
+  	update fb_iot_media_attribute
+  	set
+  		iccid = #{iccid}
+  	WHERE machine_code = #{machineCode}
+  </update>
+  <!-- 更改终端绑定 手动模式-->
+  <!-- <update id="updateIccidAndIccidUpdateType" parameterType="map" >
+  	update fb_iot_media_attribute
+  	set
+  		iccid = #{iccid},
+  		iccid_update_type=#{iccidUpdateType}
+  	WHERE machine_code = #{machineCode}
+  </update> -->
+
+  <!-- 删除 -->
+  <delete id="deleteByIccid" parameterType="java.lang.String">
+  	delete from fb_iot_media_attribute where iccid=#{iccid}
+  </delete>
+  <delete id="deleteByMachineCode" parameterType="java.lang.String">
+  	delete from fb_iot_media_attribute where machine_code=#{machineCode}
+  </delete>
+
+  <!-- 查询每个运营商的物联卡信息 -->
+  <select id="selectByIotType" parameterType="java.lang.Integer" resultType="IotMediaAttributeModel">
+  	SELECT
+		b.iccid,
+		b.imsi,
+		b.access_number as accessNumber,
+		b.iot_type as iotType,
+		b.cur_data_usage as curDataUsage,
+		b.total_data_usage as totalDataUsage,
+		b.card_type as cardType,
+		b.card_status as cardStatus,
+		b.create_time AS createTime1,
+		b.is_main AS isMain
+	FROM fb_iot_media_attribute b where b.iot_type= #{iotType}
+  </select>
+
+ <!--  查询设备的基本信息 对第三方平台的接口 用于同步数据 -->
+ <select id="selectClientInfo" parameterType="map" resultType="map">
+ 	SELECT
+		a.mid,
+		a.machine_code as machineCode,
+		a.client_number AS clientNumber,
+		a.client_name AS clientName,
+		a.sys_version AS sysVersion,
+		a.client_version AS clientVersion,
+		a.hardware,
+		a.register_code AS registerCode,
+		a.light,
+		a.voice,
+		a.max_voice as maxVoice,
+		a.cpu_temp AS cpuTemp,
+		a.disk_space AS diskSpace,
+		a.disk_free_space AS diskFreeSpace,
+		a.expire_file_num AS expireFileNum,
+		a.play_file_num AS playFileNum,
+		a.play_program_num AS playProgramNum,
+		a.phone_number AS phoneNumber,
+		a.ftp_id AS ftpId,
+		a.download_start_time AS downloadStartTime,
+		a.download_end_time AS downloadEndTime,
+	    a.clean_file_day AS cleanFileDay,
+		a.media_ip AS mediaIp,
+		a.create_time AS createTime,
+		a.ad_status AS adStatus,
+		a.work_start_time as workStartTime,
+		a.work_end_time as workEndTime,
+		a.net_type as netType,
+		a.client_version AS clientVersion,
+		a.last_receive_time AS lastReceiveTime,
+		a.download_progress as downloadProgress,
+		a.dog_version as dogVersion,
+		<!-- i.iccid,
+		i.imsi,
+		i.cur_data_usage as curDataUsage,
+		i.card_status as cardStatus,
+		i.iot_type as iotType,-->
+		a.video_out_mode as videoOutMode,
+		a.net_speed as netSpeed,
+		a.test_speed_time as testSpeedTime,
+		a.connect_addr as connectAddr,
+		a.work_status as workStatus,
+		a.record_screen_info as recordScreenInfo
+	FROM
+		fb_media_attribute a LEFT JOIN fb_iot_media_attribute i on a.machine_code=i.machine_code and i.is_main=1
+	<where>
+		<if test="mids">
+			and a.mid in (
+			<foreach collection="array" item="item" separator=",">
+				#{item}
+			</foreach>
+			)
+		</if>
+	</where>
+	order by a.create_time desc limit #{startRow},#{pageSize}
+ </select>
+ <select id="selectClientInfoCount" parameterType="map" resultType="java.lang.Integer">
+ 	SELECT
+		count(a.mid)
+	FROM
+		fb_media_attribute a LEFT JOIN fb_iot_media_attribute i on a.machine_code=i.machine_code and i.is_main=1
+	<where>
+		<if test="mids">
+			and a.mid in (
+			<foreach collection="array" item="item" separator=",">
+				#{item}
+			</foreach>
+			)
+		</if>
+	</where>
+ </select>
+ <!-- 第三方平台 巡检系统同步物联卡数据 -->
+ <select id="selectIotInfo" parameterType="map" resultType="map">
+ 	SELECT
+		a.mid,
+		b.machine_code AS machineCode,
+		b.iccid,
+		b.imsi,
+		b.access_number AS accessNumber,
+		b.iot_type AS iotType,
+		b.cur_data_usage AS curDataUsage,
+		b.total_data_usage AS totalDataUsage,
+		b.card_type AS cardType,
+		b.card_status AS cardStatus,
+		b.is_main AS isMain,
+		b.iccid_update_type AS iccidUpdateType,
+		b.open_time AS openTime,
+		b.expire_time AS expireTime
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_iot_media_attribute b ON a.machine_code = b.machine_code
+	WHERE
+		b.machine_code IS NOT NULL
+	AND b.iccid IS NOT NULL
+	ORDER BY a.mid asc
+	<if test="startRow != null and pageSize != null">
+		limit #{startRow},#{pageSize}
+	</if>
+ </select>
+ <select id="selectIotInfoCount" parameterType="map" resultType="java.lang.Integer">
+ 	SELECT
+		count(a.mid)
+	FROM
+		fb_media_attribute a
+	LEFT JOIN fb_iot_media_attribute b ON a.machine_code = b.machine_code
+	WHERE
+		b.machine_code IS NOT NULL
+	AND b.iccid IS NOT NULL
+	ORDER BY a.mid asc
+
+ </select>
+
+</mapper>

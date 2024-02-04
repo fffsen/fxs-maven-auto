@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.ModuleDao" >
+  <resultMap id="BaseResultMap" type="ModuleModel" >
+    <id column="module_id" property="moduleId" jdbcType="INTEGER" />
+    <result column="module_name" property="moduleName" jdbcType="VARCHAR" />
+    <result column="module_to_project" property="moduleToProject" jdbcType="VARCHAR" />
+    <result column="is_delete" property="isDelete" jdbcType="TINYINT" />
+  </resultMap>
+
+  <resultMap id="ModuleMap" type="ModuleModel" >
+    <id column="module_id" property="moduleId" jdbcType="INTEGER" />
+    <result column="module_name" property="moduleName" jdbcType="VARCHAR" />
+    <result column="module_to_project" property="moduleToProject" jdbcType="VARCHAR" />
+    <result column="is_delete" property="isDelete" jdbcType="TINYINT" />
+    <collection property="mfmodel" javaType="list" ofType="ModuleFunctionModel">
+	    <id column="function_id" property="functionId" jdbcType="INTEGER" />
+	    <result column="function_name" property="functionName" jdbcType="VARCHAR" />
+	    <result column="function_introduce" property="functionIntroduce" jdbcType="VARCHAR" />
+	    <result column="function_code" property="functionCode" jdbcType="VARCHAR" />
+	    <result column="function_url" property="functionUrl" jdbcType="VARCHAR" />
+	    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+	    <result column="is_module" property="isModule" jdbcType="TINYINT" />
+    </collection>
+  </resultMap>
+
+ <!--  查询发布系统的模块功能信息 -->
+  <select id="selectPublishModule" resultMap="ModuleMap">
+  	SELECT
+		a.module_id ,
+		a.module_name ,
+		a.module_to_project ,
+		a.is_delete,
+		b.function_id ,
+		b.function_name,
+		b.function_code,
+		b.function_url,
+		b.create_time,
+		b.is_module
+	FROM
+		pr_module a
+	LEFT JOIN pr_module_function b ON a.module_id = b.module_id
+	WHERE
+		a.is_delete = 1
+	AND a.module_to_project = 'advert-publish'
+	AND b.is_delete = 1
+	ORDER BY a.module_id,b.function_id ASC
+  </select>
+
+</mapper>

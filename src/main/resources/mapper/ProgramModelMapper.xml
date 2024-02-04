@@ -1,0 +1,827 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.ProgramDao" >
+  <resultMap id="BaseResultMap" type="ProgramModel" >
+    <id column="program_id" property="programId" jdbcType="INTEGER" />
+    <result column="program_name" property="programName" jdbcType="VARCHAR" />
+    <result column="total_play_time" property="totalPlayTime" jdbcType="INTEGER" />
+    <result column="total_size" property="totalSize"/>
+    <result column="program_width" property="programWidth" jdbcType="DOUBLE" />
+    <result column="program_height" property="programHeight" jdbcType="DOUBLE" />
+    <result column="screen_type" property="screenType" jdbcType="TINYINT" />
+    <result column="audit_status" property="auditStatus" jdbcType="TINYINT" />
+    <result column="audit_remark" property="auditRemark" jdbcType="VARCHAR" />
+    <result column="creator_id" property="creatorId" jdbcType="INTEGER" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+    <result column="background_id" property="backgroundId" jdbcType="INTEGER" />
+    <result column="background_color" property="backgroundColor" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <resultMap id="templateWithLayoutMap" type="ProgramModel" >
+   <id column="program_id" property="programId" jdbcType="INTEGER" />
+    <result column="program_name" property="programName" jdbcType="VARCHAR" />
+    <result column="total_play_time" property="totalPlayTime" jdbcType="INTEGER" />
+    <result column="program_width" property="programWidth" jdbcType="DOUBLE" />
+    <result column="program_height" property="programHeight" jdbcType="DOUBLE" />
+    <result column="screen_type" property="screenType" jdbcType="TINYINT" />
+    <result column="audit_status" property="auditStatus" jdbcType="TINYINT" />
+    <result column="audit_remark" property="auditRemark" jdbcType="VARCHAR" />
+    <result column="creator_id" property="creatorId" jdbcType="INTEGER" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+    <result column="background_id" property="backgroundId" jdbcType="INTEGER" />
+    <result column="background_color" property="backgroundColor" jdbcType="VARCHAR" />
+    <association property="programMaterialModel" javaType="ProgramMaterialModel" column="background_id">
+  	    <id column="material_id" property="materialId" jdbcType="INTEGER" />
+  	    <result column="material_name" property="materialName" jdbcType="VARCHAR" />
+	    <result column="material_path" property="materialPath" jdbcType="VARCHAR" />
+  	</association>
+  	<collection property="plmodel" javaType="list" ofType="ProgramLayoutModel">
+  		<id column="program_id" property="programId" jdbcType="INTEGER" />
+	    <id column="area_id" property="areaId" jdbcType="TINYINT" />
+	    <result column="area_type" property="areaType" jdbcType="TINYINT" />
+	    <result column="area_info" property="areaInfo" jdbcType="VARCHAR" />
+	    <result column="layer" property="layer" jdbcType="TINYINT" />
+	    <result column="x" property="x" jdbcType="DOUBLE" />
+	    <result column="y" property="y" jdbcType="DOUBLE" />
+	    <result column="width" property="width" jdbcType="DOUBLE" />
+	    <result column="height" property="height" jdbcType="DOUBLE" />
+  	</collection>
+  </resultMap>
+
+  <resultMap id="porgAndLayoutAndMaterialMap" type="ProgramMsg" >
+   	<id column="program_id" property="programId" jdbcType="INTEGER" />
+   	<id column="program_order" property="programOrder" jdbcType="TINYINT" />
+    <result column="program_name" property="programName" jdbcType="VARCHAR" />
+    <result column="total_play_time" property="totalPlayTime" jdbcType="INTEGER" />
+    <result column="program_width" property="programWidth" jdbcType="DOUBLE" />
+    <result column="program_height" property="programHeight" jdbcType="DOUBLE" />
+    <result column="screen_type" property="screenType" jdbcType="TINYINT" />
+    <association property="programBackgroundMsg" javaType="ProgramBackgroundMsg" column="backgroundId">
+  	    <id column="backgroundId" property="backgroundId" jdbcType="INTEGER" />
+  	    <result column="backName" property="backName" jdbcType="VARCHAR" />
+	    <result column="backPath" property="backPath" jdbcType="VARCHAR" />
+	    <result column="background_color" property="backgroundColor" jdbcType="VARCHAR" />
+	    <result column="backSize" property="backSize"  />
+	    <result column="backType" property="backType"  />
+	    <result column="backHeight" property="backHeight"  />
+	    <result column="backWidth" property="backWidth"  />
+  	</association>
+  	<association property="programDateSetMsg" javaType="ProgramDateSetMsg" column="program_id">
+  		<result column="time_mode" property="timeMode" jdbcType="TINYINT" />
+	    <result column="download_mode" property="downloadMode" jdbcType="TINYINT" />
+	    <result column="play_start_date" property="playStartDate" jdbcType="DATE" />
+	    <result column="play_start_time" property="playStartTime" jdbcType="TIME" />
+	    <result column="play_end_date" property="playEndDate" jdbcType="DATE" />
+	    <result column="play_end_time" property="playEndTime" jdbcType="TIME" />
+	    <result column="week_set" property="weekSet" jdbcType="VARCHAR" />
+	    <result column="play_level" property="playLevel" jdbcType="TINYINT" />
+	    <collection property="playTimeSetList" javaType="list" ofType="PlayTimeSetMsg">
+	    	  <id column="time_set_id" property="timeSetId" jdbcType="INTEGER" />
+	    	  <result column="start_time" property="startTime" jdbcType="TIME" />
+			  <result column="end_time" property="endTime" jdbcType="TIME" />
+			  <result column="frequency" property="frequency" jdbcType="SMALLINT" />
+	    </collection>
+  	</association>
+  	<collection property="programLayoutMsgList" javaType="list" ofType="ProgramLayoutMsg">
+	    <id column="area_id" property="areaId" jdbcType="TINYINT" />
+	    <result column="area_type" property="areaType" jdbcType="TINYINT" />
+	    <result column="layer" property="layer" jdbcType="TINYINT" />
+	    <result column="x" property="x" jdbcType="DOUBLE" />
+	    <result column="y" property="y" jdbcType="DOUBLE" />
+	    <result column="areaWidth" property="areaWidth" jdbcType="DOUBLE" />
+	    <result column="areaHeight" property="areaHeight" jdbcType="DOUBLE" />
+	    <collection property="programFileMsgList" javaType="list" ofType="ProgramFileMsg">
+	     	<id column="material_id" property="materialId" jdbcType="INTEGER" />
+		    <result column="material_name" property="materialName" jdbcType="VARCHAR" />
+		    <result column="material_path" property="materialPath" jdbcType="VARCHAR" />
+		    <result column="type" property="type" jdbcType="TINYINT" />
+		    <result column="size" property="size" jdbcType="DECIMAL" />
+		    <result column="height" property="height" jdbcType="DECIMAL" />
+		    <result column="width" property="width" jdbcType="DECIMAL" />
+		    <result column="source_url" property="sourceUrl" jdbcType="VARCHAR" />
+		    <result column="effective_time" property="effectiveTime" jdbcType="DATE"/>
+		    <result column="material_order" property="materialOrder" jdbcType="TINYINT" />
+		    <result column="play_time" property="playTime" jdbcType="INTEGER" />
+		    <result column="extend" property="extend" jdbcType="VARCHAR" />
+		    <result column="check_code" property="checkCode" jdbcType="VARCHAR" />
+	    </collection>
+  	</collection>
+  </resultMap>
+
+<!--   节目分页查询 -->
+  <select id="selectPage" parameterType="map" resultType="map">
+	  SELECT
+			a.program_id AS programId,
+			a.program_name AS programName,
+			a.total_play_time AS totalPlayTime,
+			sum(d.size ) AS totalSize,
+			a.program_width AS programWidth,
+			a.program_height AS programHeight,
+			a.screen_type AS screenType,
+			a.audit_status AS auditStatus,
+			a.audit_remark as auditRemark,
+			a.creator_id AS creatorId,
+			c.user_name AS creator,
+			a.create_time AS createTime,
+			a.update_time AS updateTime,
+			count(b.program_id) AS fileNum,
+			(
+				SELECT
+					count(*)
+				FROM
+					fb_program_layout
+				WHERE
+					program_id = a.program_id
+			) AS areaNum,
+			(
+				SELECT
+					count(*)
+				FROM
+					fb_program_publish_record
+				WHERE
+					program_id = a.program_id
+			) AS publishNum
+		FROM
+			fb_program a
+		LEFT JOIN fb_program_material_relation b ON a.program_id = b.program_id
+		LEFT JOIN program_material d on b.material_id=d.material_id
+		LEFT JOIN fb_sys_user c ON c.uid = a.creator_id
+		<where>
+			<if test="sameGroupUserId != null">
+				and a.creator_id in (
+				<foreach collection="sameGroupUserId" separator="," item="item">
+					#{item}
+				</foreach>
+				)
+			</if>
+			<if test="programName != null and programName != ''">
+				and a.program_name like concat("%",#{programName},"%")
+			</if>
+			<if test="materialId != null and materialId > 0">
+				and b.material_id = #{materialId}
+			</if>
+			<if test="auditStatus != null">
+				and a.audit_status = #{auditStatus}
+			</if>
+		</where>
+		GROUP BY a.program_id ORDER BY create_time desc limit #{startRow},#{pageSize}
+  </select>
+
+  <select id="selectPageCount" parameterType="map" resultType="java.lang.String">
+	  select count(*) from (
+		  SELECT
+				a.program_id AS programId,
+				b.program_id
+			FROM
+				fb_program a
+			LEFT JOIN fb_program_material_relation b ON a.program_id = b.program_id
+			LEFT JOIN program_material d on b.material_id=d.material_id
+			LEFT JOIN fb_sys_user c ON c.uid = a.creator_id
+			<where>
+				<if test="sameGroupUserId != null">
+					and a.creator_id in (
+					<foreach collection="sameGroupUserId" separator="," item="item">
+						#{item}
+					</foreach>
+					)
+				</if>
+				<if test="programName != null and programName != ''">
+					and a.program_name like concat("%",#{programName},"%")
+				</if>
+				<if test="materialId != null and materialId > 0">
+					and b.material_id = #{materialId}
+				</if>
+				<if test="auditStatus != null">
+					and a.audit_status = #{auditStatus}
+				</if>
+			</where>
+			GROUP BY a.program_id
+		) d
+  </select>
+  <!-- 根据条件查询节目的发布方式 -->
+  <select id="selectPageProgTimeMode" parameterType="map" resultType="map">
+  	   SELECT
+			a.program_id AS programId,
+			a.program_name AS programName,
+			a.total_play_time AS totalPlayTime,
+			a.program_width AS programWidth,
+			a.program_height AS programHeight,
+			a.screen_type AS screenType,
+			a.audit_status AS auditStatus,
+			a.audit_remark as auditRemark,
+			a.creator_id AS creatorId,
+			a.create_time AS createTime,
+			a.update_time AS updateTime,
+			GROUP_CONCAT(distinct b.time_mode) AS progTimeMode
+		FROM
+			fb_program a LEFT JOIN fb_program_publish_record b on a.program_id=b.program_id
+		<where>
+			<if test="sameGroupUserId != null">
+				and a.creator_id in (
+				<foreach collection="sameGroupUserId" separator="," item="item">
+					#{item}
+				</foreach>
+				)
+			</if>
+			<if test="programName != null and programName != ''">
+				and a.program_name like concat("%",#{programName},"%")
+			</if>
+			<if test="auditStatus != null">
+				and a.audit_status = #{auditStatus}
+			</if>
+			<if test="playLevel != null and playLevel > 0">
+				and b.play_level = #{playLevel}
+			</if>
+			<if test="searchProgType != null and searchProgType == 1">
+				and b.time_mode != 1 and play_start_date &lt; NOW() and play_end_date &lt; NOW()
+			</if>
+		</where>
+		GROUP BY a.program_id ORDER BY a.create_time desc limit #{startRow},#{pageSize}
+  </select>
+  <select id="selectPageProgTimeModeCount" parameterType="map" resultType="java.lang.Integer">
+  	    select count(*) from (
+	  	    SELECT
+				a.program_id AS programId
+			FROM
+				fb_program a LEFT JOIN fb_program_publish_record b on a.program_id=b.program_id
+			<where>
+				<if test="sameGroupUserId != null">
+					and a.creator_id in (
+					<foreach collection="sameGroupUserId" separator="," item="item">
+						#{item}
+					</foreach>
+					)
+				</if>
+				<if test="programName != null and programName != ''">
+					and a.program_name like concat("%",#{programName},"%")
+				</if>
+				<if test="auditStatus != null">
+					and a.audit_status = #{auditStatus}
+				</if>
+				<if test="playLevel != null and playLevel > 0">
+					and b.play_level = #{playLevel}
+				</if>
+				<if test="searchProgType != null and searchProgType == 1">
+					and b.time_mode != 1 and play_start_date &lt; NOW() and play_end_date &lt; NOW()
+				</if>
+			</where>
+			GROUP BY a.program_id
+		) d
+  </select>
+
+
+  <!--   分页查询未配置订单的节目 -->
+  <select id="selectPageNoOrders" parameterType="map" resultType="map">
+	  SELECT
+			a.program_id AS programId,
+			a.program_name AS programName,
+			a.total_play_time AS totalPlayTime,
+			sum(d.size ) AS totalSize,
+			a.program_width AS programWidth,
+			a.program_height AS programHeight,
+			a.screen_type AS screenType,
+			a.audit_status AS auditStatus,
+			a.audit_remark as auditRemark,
+			a.creator_id AS creatorId,
+			c.user_name AS creator,
+			a.create_time AS createTime,
+			a.update_time AS updateTime,
+			count(b.program_id) AS fileNum,
+			(
+				SELECT
+					count(*)
+				FROM
+					fb_program_layout
+				WHERE
+					program_id = a.program_id
+			) AS areaNum
+		FROM
+			(
+			SELECT
+				aa.*
+			FROM
+				fb_program aa
+			LEFT JOIN fb_member_orders bb ON aa.program_id = bb.program_id
+			WHERE
+				bb.id IS NULL
+		) a
+		LEFT JOIN fb_program_material_relation b ON a.program_id = b.program_id
+		LEFT JOIN program_material d on b.material_id=d.material_id
+		LEFT JOIN fb_sys_user c ON c.uid = a.creator_id
+		<where>
+			<if test="programName != null and programName != ''">
+				and a.program_name like concat("%",#{programName},"%")
+			</if>
+			<if test="materialId != null and materialId > 0">
+				and b.material_id = #{materialId}
+			</if>
+			<if test="auditStatus != null">
+				and a.audit_status = #{auditStatus}
+			</if>
+		</where>
+		GROUP BY a.program_id ORDER BY create_time desc limit #{startRow},#{pageSize}
+  </select>
+  <select id="selectPageNoOrdersCount" parameterType="map" resultType="java.lang.Integer">
+	  select count(*) from (
+		  SELECT
+				a.program_id AS programId,
+				b.program_id
+			FROM
+				(
+				SELECT
+					aa.*
+				FROM
+					fb_program aa
+				LEFT JOIN fb_member_orders bb ON aa.program_id = bb.program_id
+				WHERE
+					bb.id IS NULL
+			) a
+			LEFT JOIN fb_program_material_relation b ON a.program_id = b.program_id
+			LEFT JOIN program_material d on b.material_id=d.material_id
+			LEFT JOIN fb_sys_user c ON c.uid = a.creator_id
+			<where>
+				<if test="programName != null and programName != ''">
+					and a.program_name like concat("%",#{programName},"%")
+				</if>
+				<if test="materialId != null and materialId > 0">
+					and b.material_id = #{materialId}
+				</if>
+				<if test="auditStatus != null">
+					and a.audit_status = #{auditStatus}
+				</if>
+			</where>
+			GROUP BY a.program_id
+		) d
+  </select>
+
+
+
+
+ <!--  新增节目 -->
+  <insert id="insert" parameterType="ProgramModel" useGeneratedKeys="true" keyProperty="programId">
+    insert into fb_program (program_name,
+      total_play_time,total_size, program_width, program_height,
+      screen_type, audit_status, creator_id,
+      create_time, update_time, background_id,
+      background_color)
+    values (#{programName,jdbcType=VARCHAR},
+      #{totalPlayTime,jdbcType=INTEGER},#{totalSize}, #{programWidth,jdbcType=DOUBLE}, #{programHeight,jdbcType=DOUBLE},
+      #{screenType,jdbcType=TINYINT}, #{auditStatus,jdbcType=TINYINT}, #{creatorId,jdbcType=INTEGER},
+      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}, #{backgroundId,jdbcType=INTEGER},
+      #{backgroundColor,jdbcType=VARCHAR})
+  </insert>
+
+<!--   修改节目 -->
+   <update id="updateProgram" parameterType="ProgramModel" >
+    update fb_program
+    set
+      program_name = #{programName,jdbcType=VARCHAR},
+      total_play_time = #{totalPlayTime,jdbcType=INTEGER},
+      total_size = #{totalSize},
+      program_width = #{programWidth,jdbcType=DOUBLE},
+      program_height = #{programHeight,jdbcType=DOUBLE},
+      screen_type = #{screenType,jdbcType=TINYINT},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      background_id = #{backgroundId,jdbcType=INTEGER},
+      background_color = #{backgroundColor,jdbcType=VARCHAR}
+    where program_id = #{programId,jdbcType=INTEGER}
+  </update>
+<!--   删除节目 -->
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from fb_program
+    where program_id = #{programId,jdbcType=INTEGER}
+  </delete>
+<!--   根据节目id查询节目信息 -->
+  <select id="selectByPrimaryKeys" resultType="map" >
+   	SELECT
+		a.program_id AS programId,
+		a.program_name AS programName,
+		a.total_play_time AS totalPlayTime,
+		a.program_width AS programWidth,
+		a.program_height AS programHeight,
+		a.screen_type AS screenType,
+		a.audit_status AS auditStatus,
+		a.audit_remark as auditRemark,
+		a.creator_id AS creatorId,
+		a.create_time AS createTime,
+		a.update_time AS updateTime,
+		a.background_id as backgroundId,
+		a.background_color as backgroundColor,
+		b.material_name as materialName,
+		b.material_path as materialPath
+	FROM
+		fb_program a LEFT JOIN program_material b on a.background_id=b.material_id
+    where program_id in (
+    <foreach collection="array" item="item" separator=",">
+    	#{item}
+    </foreach>
+    )
+  </select>
+<!--   重命名 -->
+  <update id="updateName" parameterType="ProgramModel">
+      update fb_program
+    set
+      program_name = #{programName,jdbcType=VARCHAR},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where program_id = #{programId,jdbcType=INTEGER}
+  </update>
+  <!--   修改总时长-->
+  <update id="updateTotalPlayTime" parameterType="ProgramModel">
+      update fb_program
+    set
+      total_play_time = #{totalPlayTime,jdbcType=INTEGER}
+    where program_id = #{programId,jdbcType=INTEGER}
+  </update>
+<!--  审核  -->
+  <update id="updateAudit" parameterType="ProgramModel" >
+    update fb_program
+    set
+      audit_status = #{auditStatus},
+      audit_remark = #{auditRemark}
+    where program_id = #{programId,jdbcType=INTEGER}
+  </update>
+
+  <!-- 修改节目的基本数据 -->
+  <update id="updateProgramInfo" parameterType="ProgramModel">
+      update fb_program
+    <set>
+    	program_name = #{programName},
+      	update_time = #{updateTime},
+      	<if test="auditStatus != null and auditStatus > 0">
+      	audit_status = #{auditStatus},
+      	audit_remark = #{auditRemark},
+      	</if>
+    </set>
+    where program_id = #{programId}
+  </update>
+
+  <!--分页查询 节目信息与布局信息 -->
+  <select id="selectPageProgramAndLayout" resultMap="templateWithLayoutMap"
+	parameterType="map">
+	SELECT
+	*
+	FROM
+	(
+	SELECT
+	c.*,d.material_id,d.material_name,d.material_path
+	FROM
+	fb_program c LEFT JOIN program_material d on c.background_id = d.material_id
+	<where>
+		<if test="sameGroupUserId != null">
+			and c.creator_id in (
+			<foreach collection="sameGroupUserId" separator="," item="item">
+				#{item}
+			</foreach>
+			)
+		</if>
+		<if test="programName != null and programName != ''">
+			and c.program_name like concat("%",#{programName},"%")
+		</if>
+		<if test="screenType != null and screenType > 0">
+			and c.screen_type = #{screenType}
+		</if>
+		<if test="auditStatus != null ">
+			and c.audit_status = #{auditStatus}
+		</if>
+	</where>
+
+	ORDER BY c.create_time DESC LIMIT #{startRow},#{pageSize}
+	) a
+	LEFT JOIN
+	fb_program_layout b ON a.program_id = b.program_id
+	</select>
+
+  	<select id="selectPageProgramAndLayoutCount" resultType="java.lang.String"
+		parameterType="map">
+		SELECT
+		count(*)
+		FROM
+		fb_program
+		<where>
+			<if test="sameGroupUserId != null">
+				and creator_id in (
+				<foreach collection="sameGroupUserId" separator="," item="item">
+					#{item}
+				</foreach>
+				)
+			</if>
+			<if test="programName != null and programName != ''">
+				and program_name like concat("%",#{programName},"%")
+			</if>
+			<if test="screenType != null and screenType > 0">
+				and screen_type = #{screenType}
+			</if>
+			<if test="auditStatus != null ">
+				and audit_status = #{auditStatus}
+			</if>
+		</where>
+	</select>
+  <!-- 根据节目id查询出布局及素材信息 -->
+  <select id="selectPorgAndLayoutAndMaterial" resultMap="porgAndLayoutAndMaterialMap">
+	  SELECT
+			a.*, b.area_id,
+			b.area_type,
+			b.layer,
+			b.x,
+			b.y,
+			b.width AS areaWidth,
+			b.height AS areaHeight,
+			d.material_id,
+			d.material_name,
+			d.size,
+			d.material_path,
+			d.type,
+			d.height,
+			d.width,
+			d.source_url,
+			DATE_FORMAT(d.effective_time,'%Y-%m-%d') as effective_time,
+			c.material_order,
+			c.play_time,
+			c.extend
+		FROM
+			(
+				SELECT
+					c.program_id,
+					c.program_name,
+					c.total_play_time,
+					c.program_width,
+					c.program_height,
+					c.screen_type,
+					c.background_color,
+					d.material_id AS backgroundId,
+					d.material_name as backName,
+					d.material_path AS backPath,
+					d.size AS backSize,
+					d.type AS backType,
+					d.height AS backHeight,
+					d.width AS backWidth
+				FROM
+					fb_program c
+				LEFT JOIN program_material d ON c.background_id = d.material_id
+				WHERE
+					c.program_id IN (
+					<foreach collection="array" item="item" separator=",">
+						#{item}
+					</foreach>
+					)
+			) a
+		LEFT JOIN fb_program_layout b ON a.program_id = b.program_id
+		LEFT JOIN fb_program_material_relation c ON b.program_id = c.program_id
+		AND b.area_id = c.area_id
+		LEFT JOIN program_material d ON c.material_id = d.material_id
+  </select>
+
+  <!--   根据机器码查询出节目单  -->
+  <select id="selectProgByMachineCode" parameterType="java.lang.String" resultMap="porgAndLayoutAndMaterialMap">
+  	 SELECT
+			a.*, b.area_id,
+			b.area_type,
+			b.layer,
+			b.x,
+			b.y,
+			b.width AS areaWidth,
+			b.height AS areaHeight,
+			d.material_id,
+			d.material_name,
+			d.size,
+			d.material_path,
+			d.type,
+			d.height,
+			d.width,
+			d.source_url,
+			DATE_FORMAT(d.effective_time,'%Y-%m-%d') as effective_time,
+			d.check_code,
+			c.material_order,
+			c.play_time,
+			c.extend
+		FROM
+			(
+			SELECT
+					cc.media_group_id,
+					cc.program_id,
+					c.program_name,
+					c.total_play_time,
+					c.program_width,
+					c.program_height,
+					c.screen_type,
+					c.background_color,
+					d.material_id AS backgroundId,
+					d.material_name as backName,
+					d.material_path AS backPath,
+					d.size AS backSize,
+					d.type AS backType,
+					d.height AS backHeight,
+					d.width AS backWidth,
+					cc.time_mode,
+					cc.download_mode,
+					cc.play_start_date,
+					cc.play_start_time,
+					cc.play_end_date,
+					cc.play_end_time,
+					cc.week_set,
+					cc.play_level,
+					cc.program_order,
+					ee.start_time,
+					ee.end_time,
+					ee.frequency,
+					ee.time_set_id
+				FROM
+					fb_program_publish_record cc LEFT JOIN fb_program c on cc.program_id = c.program_id
+				LEFT JOIN program_material d ON c.background_id = d.material_id
+				LEFT JOIN fb_play_time_set ee on cc.publish_id=ee.publish_id
+				WHERE cc.media_group_id in (
+									SELECT
+										b.media_group_id
+									FROM
+										fb_media_attribute a
+									LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+									WHERE
+										a.machine_code = #{machineCode}
+				) and c.program_name is not null
+					<!--  FIND_IN_SET(
+								cc.media_group_id,
+								(
+									SELECT
+										concat(getParentId(b.media_group_id),",",b.media_group_id)
+									FROM
+										fb_media_attribute a
+									LEFT JOIN fb_media_group_relation b ON a.mid = b.mid
+									WHERE
+										machine_code = #{machineCode}
+								)
+							)  and c.program_name is not null GROUP BY program_id -->
+
+			) a
+		LEFT JOIN fb_program_layout b ON a.program_id = b.program_id
+		LEFT JOIN fb_program_material_relation c ON b.program_id = c.program_id
+		AND b.area_id = c.area_id
+		LEFT JOIN program_material d ON c.material_id = d.material_id
+  </select>
+
+  <!--   根据终端组id查询出节目单  -->
+  <select id="selectProgByGroupId" parameterType="java.lang.Integer" resultMap="porgAndLayoutAndMaterialMap">
+  	 SELECT
+			a.*, b.area_id,
+			b.area_type,
+			b.layer,
+			b.x,
+			b.y,
+			b.width AS areaWidth,
+			b.height AS areaHeight,
+			d.material_id,
+			d.material_name,
+			d.size,
+			d.material_path,
+			d.type,
+			d.height,
+			d.width,
+			d.source_url,
+			DATE_FORMAT(d.effective_time,'%Y-%m-%d') as effective_time,
+			d.check_code,
+			c.material_order,
+			c.play_time,
+			c.extend
+		FROM
+			(
+				SELECT
+					cc.media_group_id,
+					cc.program_id,
+					c.program_name,
+					c.total_play_time,
+					c.program_width,
+					c.program_height,
+					c.screen_type,
+					c.background_color,
+					d.material_id AS backgroundId,
+					d.material_name as backName,
+					d.material_path AS backPath,
+					d.size AS backSize,
+					d.type AS backType,
+					d.height AS backHeight,
+					d.width AS backWidth,
+					cc.time_mode,
+					cc.download_mode,
+					cc.play_start_date,
+					cc.play_start_time,
+					cc.play_end_date,
+					cc.play_end_time,
+					cc.week_set,
+					cc.play_level,
+					cc.program_order,
+					ee.start_time,
+					ee.end_time,
+					ee.frequency,
+					ee.time_set_id
+				FROM
+					fb_program_publish_record cc LEFT JOIN fb_program c on cc.program_id = c.program_id
+				LEFT JOIN program_material d ON c.background_id = d.material_id
+				LEFT JOIN fb_play_time_set ee on cc.publish_id=ee.publish_id
+				WHERE cc.media_group_id = #{mediaGroupId} and c.program_name is not null
+					<!--  FIND_IN_SET(
+								cc.media_group_id,
+								(
+								   SELECT concat(getParentId(#{mediaGroupId}),",",#{mediaGroupId})
+								)
+							)  and c.program_name is not null GROUP BY program_id -->
+			) a
+		LEFT JOIN fb_program_layout b ON a.program_id = b.program_id
+		LEFT JOIN fb_program_material_relation c ON b.program_id = c.program_id
+		AND b.area_id = c.area_id
+		LEFT JOIN program_material d ON c.material_id = d.material_id
+  </select>
+
+  <!-- 用于未设置发布时间的节目导出  默认都导出永久的节目单 用于节目维护的导出-->
+  <select id="selectProgByProgramIds" resultMap="porgAndLayoutAndMaterialMap">
+	SELECT
+			a.*, b.area_id,
+			b.area_type,
+			b.layer,
+			b.x,
+			b.y,
+			b.width AS areaWidth,
+			b.height AS areaHeight,
+			d.material_id,
+			d.material_name,
+			d.size,
+			d.material_path,
+			d.type,
+			d.height,
+			d.width,
+			d.source_url,
+			DATE_FORMAT(d.effective_time,'%Y-%m-%d') as effective_time,
+			d.check_code,
+			c.material_order,
+			c.play_time,
+			c.extend
+		FROM
+			(
+				SELECT
+					c.program_id,
+					c.program_name,
+					c.total_play_time,
+					c.program_width,
+					c.program_height,
+					c.screen_type,
+					c.background_color,
+					d.material_id AS backgroundId,
+					d.material_name as backName,
+					d.material_path AS backPath,
+					d.size AS backSize,
+					d.type AS backType,
+					d.height AS backHeight,
+					d.width AS backWidth,
+					1 as time_mode,
+					1 as download_mode,
+					DATE_FORMAT(NOW(),'%Y-%m-%d') as play_start_date,
+					TIME_FORMAT(STR_TO_DATE('1997-01-01 00:00:00','%Y-%m-%d %H:%i:%s'),'%H:%i:%s') as play_start_time,
+					STR_TO_DATE('2199-01-01','%Y-%m-%d') as play_end_date,
+					TIME_FORMAT(STR_TO_DATE('1997-01-01 23:59:59','%Y-%m-%d %H:%i:%s'),'%H:%i:%s') as play_end_time,
+					null as week_set,
+					1 as play_level,
+					c.program_id as program_order,
+					TIME_FORMAT(STR_TO_DATE('1997-01-01 00:00:00','%Y-%m-%d %H:%i:%s'),'%H:%i:%s') as start_time,
+					TIME_FORMAT(STR_TO_DATE('1997-01-01 23:59:59','%Y-%m-%d %H:%i:%s'),'%H:%i:%s') as end_time,
+					0 as frequency,
+					DATE_FORMAT(NOW(),'%m%d%H%i%s') + c.program_id as time_set_id
+				FROM
+					fb_program c LEFT JOIN program_material d ON c.background_id = d.material_id
+				WHERE c.program_id in (
+				<foreach collection="array" item="item" separator=",">
+					#{item}
+				</foreach>
+				) and c.program_name is not null
+
+			) a
+		LEFT JOIN fb_program_layout b ON a.program_id = b.program_id
+		LEFT JOIN fb_program_material_relation c ON b.program_id = c.program_id
+		AND b.area_id = c.area_id
+		LEFT JOIN program_material d ON c.material_id = d.material_id
+
+  </select>
+
+  <select id="checkProgName" parameterType="map" resultType="map">
+  	select program_id as programId,program_name AS programName
+  	from fb_program
+  	where program_name=#{programName}
+  	<if test="programId !=null">
+  		and program_id != #{programId}
+  	</if>
+  </select>
+
+  <!-- 查询节目是否存在空的播放区 -->
+  <select id="checkNullArea" parameterType="java.lang.Integer" resultType="map">
+  	SELECT
+		a.*
+	FROM
+		fb_program a
+	LEFT JOIN fb_program_layout c ON a.program_id = c.program_id
+	LEFT JOIN fb_program_material_relation b ON c.program_id = b.program_id
+	AND c.area_id = b.area_id
+	WHERE
+		a.program_id = #{programId} and b.material_id is null
+  </select>
+
+
+</mapper>

@@ -1,0 +1,85 @@
+#镜像制作使用
+version: '3'
+networks:
+#  my_vlan_network:
+#    driver: macvlan
+#    driver_opts:
+#      parent: enp2s0
+#    ipam:
+#      driver: default
+#      config:
+#        - subnet: 192.168.2.0/24
+#        gateway: 192.168.2.254
+  net_xf:
+    driver: bridge
+
+services:
+  mysql:
+    image: mysql:5.7
+    restart: always
+    container_name: xf_mysql
+    network_mode: xf_net
+    volumes:
+      - /home/docker_xf/mysql/mysqldata:/var/lib/mysql
+      - /home/docker_xf/mysql/config/my.cnf:/etc/mysql/conf.d/my.cnf
+    environment:
+      - "MYSQL_ROOT_PASSWORD=zhongyizhongyizhongyi"
+      - "MYSQL_DATABASE=zycm_zybao_test"
+      - "TZ=Asia/Shanghai"
+    ports:
+      - 3406:3306
+
+  redis:
+    image: redis:6.2.5
+    restart: always
+    container_name: xf_redis
+    network_mode: xf_net
+    ports:
+      - 6479:6379
+    volumes:
+      - /home/docker_xf/redis/redisdata:/data
+    command: redis-server --port 6379 --requirepass zhongyi --appendonly yes --protected-mode no
+
+  ftp_tomcat:
+    image: tomcat:7
+    restart: always
+    container_name: xinfa_ftp
+    ports:
+      #http接口
+      - 9081:8080
+      #ftp的通信接口
+      - 2222:2222
+      #ftp的数据接口
+      - 2223-2225:2223-2225
+    environment:
+      - "TZ=Asia/Shanghai"
+      - "JAVA_OPTS=-XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=128m -Xms128m -Xmx256m -Xmn128m -Xss256k -XX:SurvivorRatio=8 -XX:+UseConcMarkSweepGC"
+    volumes:
+    #  - /home/docker_xf/ftp/webapps/:/usr/local/tomcat/webapps/
+      - /home/docker_xf/ftp/webapps/ftpData/:/usr/local/tomcat/ftpData/
+    #ftp服务需要物理网络支持
+    #docker network create -d macvlan --subnet=192.168.2.0/24 --gateway=192.168.2.254 -o parent=enp2s0 my_vlan_network  容器ip必须通外网才能使用
+    network_mode: xf_net
+#    networks:
+#      my_vlan_network:
+#        - ipv4_address: 192.168.2.235
+    depends_on:
+      - mysql
+      - redis
+
+  amq:
+    image: tomcat:7
+    restart: always
+    container_name: xinfa_mq
+    ports:
+      - 61616:61615
+      - 1884:1883
+      - 8162:8161
+    environment:
+      - "TZ=Asia/Shanghai"
+      - "JAVA_OPTS=-XX:MetaspaceSize=64m -XX:MaxMetaspaceSize=128m -Xms128m -Xmx256m -Xmn128m -Xss256k -XX:SurvivorRatio=8 -XX:+UseConcMarkSweepGC"
+    #volumes:
+     # - /home/docker_xf/amq/:/usr/local/tomcat/amq/
+     # - /etc/localtime:/etc/localtime
+    network_mode: xf_net
+    #command: /usr/local/tomcat/amq/apache-activemq-5.15.1/bin/activemq start

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.UserLogDao" >
+<!--  <resultMap id="BaseResultMap" type="UserLogModel" >
+    <id column="user_log_id" property="userLogId" jdbcType="INTEGER" />
+    <result column="uid" property="uid" jdbcType="INTEGER" />
+    <result column="info" property="info" jdbcType="VARCHAR" />
+    <result column="log_level" property="logLevel" jdbcType="TINYINT" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+  </resultMap>-->
+ <!--  分页查询 -->
+  <select id="selectPage" parameterType="map" resultType="map">
+	  	SELECT
+			a.user_log_id as userLogId,
+			a.uid,
+		    b.user_name as userName,
+			a.info,
+			a.log_level AS logLevel,
+			a.create_time AS createTime
+		FROM
+			fb_user_log a
+		LEFT JOIN fb_sys_user b ON a.uid = b.uid
+		<where>
+			<if test="uid != null and uid > 0">
+			  	and a.uid = #{uid}
+			</if>
+		</where>
+	    ORDER BY a.create_time desc limit #{startRow},#{pageSize}
+  </select>
+  <!--   分页查询  查询总数 -->
+  <select id="selectPageCount" parameterType="map" resultType="java.lang.Integer">
+	  	SELECT
+			count(a.user_log_id)
+		FROM
+			fb_user_log a
+		LEFT JOIN fb_sys_user b ON a.uid = b.uid
+		<where>
+			<if test="uid != null and uid > 0">
+			  	and a.uid = #{uid}
+			</if>
+		</where>
+  </select>
+   <insert id="insert" parameterType="UserLogModel" >
+    insert into fb_user_log ( uid, info,
+      log_level, create_time)
+    values (#{uid,jdbcType=INTEGER}, #{info,jdbcType=VARCHAR},
+      #{logLevel,jdbcType=TINYINT}, #{createTime,jdbcType=TIMESTAMP})
+  </insert>
+  <!-- 查询当日登录失败次数 -->
+  <select id="selectLoginFailByUid" parameterType="map" resultType="map">
+	  	SELECT
+			a.user_log_id as userLogId,
+			a.uid,
+		    b.user_name as userName,
+			a.info,
+			a.log_level AS logLevel,
+			a.create_time AS createTime
+		FROM
+			fb_user_log a
+		LEFT JOIN fb_sys_user b ON a.uid = b.uid
+		<where>
+			a.uid = #{uid} and a.log_level=4 and a.create_time BETWEEN #{startTime} and #{endTime}
+		</where>
+  </select>
+
+</mapper>

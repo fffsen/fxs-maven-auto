@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.AttributeDictionaryDao" >
+
+   <!--   查询部门 数据字典-->
+   <select id="selectDepartment" resultType="map" parameterType="map" >
+	    SELECT
+			dictionary_id as departmentId,
+			attribute_name AS departmentName,
+			info
+		FROM
+			fb_attribute_dictionary
+		WHERE
+			attribute_type = 1
+  </select>
+
+
+</mapper>

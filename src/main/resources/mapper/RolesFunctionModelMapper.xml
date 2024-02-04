@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.RolesFunctionDao" >
+ <!-- <resultMap id="BaseResultMap" type="RolesFunctionModel" >
+    <id column="role_id" property="roleId" jdbcType="INTEGER" />
+    <id column="function_id" property="functionId" jdbcType="INTEGER" />
+  </resultMap>-->
+
+  <!--   根据角色查询功能点 -->
+  <select id="selectByRole" resultType="map" parameterType="java.lang.Integer">
+  	select function_id as functionId from pr_roles_function where role_id=#{roleId}
+  </select>
+
+  <!--   根据角色id删除所有权限 -->
+  <delete id="deleteByPrimaryKey" parameterType="RolesFunctionModel" >
+    delete from pr_roles_function where role_id = #{roleId,jdbcType=INTEGER}
+  </delete>
+
+  <!--   批量新加角色权限 -->
+  <insert id="batchInsert" parameterType="RolesFunctionModel" >
+    insert into pr_roles_function (role_id, function_id)
+    values
+    <foreach collection="list" item="item" separator=",">
+    	(#{item.roleId,jdbcType=INTEGER}, #{item.functionId,jdbcType=INTEGER})
+    </foreach>
+  </insert>
+
+</mapper>

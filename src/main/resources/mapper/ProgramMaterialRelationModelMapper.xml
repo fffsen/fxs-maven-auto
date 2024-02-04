@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.ProgramMaterialRelationDao" >
+ <!-- <resultMap id="BaseResultMap" type="ProgramMaterialRelationModel" >
+    <id column="program_id" property="programId" jdbcType="INTEGER" />
+    <id column="area_id" property="areaId" jdbcType="TINYINT" />
+    <id column="material_id" property="materialId" jdbcType="INTEGER" />
+    <result column="material_order" property="materialOrder" jdbcType="TINYINT" />
+    <result column="play_time" property="playTime" jdbcType="INTEGER" />
+    <result column="extend" property="extend" jdbcType="VARCHAR" />
+  </resultMap>-->
+<!--   新增节目与素材关系表数据 -->
+  <insert id="insertOfBatch" parameterType="java.util.List" >
+    insert into fb_program_material_relation (program_id, area_id, material_id,
+      material_order, play_time, extend
+      )
+    values
+     <foreach collection="list" item="item" index="index" separator="," >
+	    (#{item.programId,jdbcType=INTEGER}, #{item.areaId,jdbcType=TINYINT}, #{item.materialId,jdbcType=INTEGER},
+	      #{item.materialOrder,jdbcType=TINYINT}, #{item.playTime,jdbcType=INTEGER}, #{item.extend,jdbcType=VARCHAR}
+	      )
+	 </foreach>
+  </insert>
+<!--   根据节目id删除信息 -->
+   <delete id="deleteByProgramId" parameterType="java.lang.Integer" >
+    delete from fb_program_material_relation
+    where program_id = #{programId,jdbcType=INTEGER}
+  </delete>
+  <!-- 根据节目id查询信息 -->
+  <select id="selectByProgramId" resultType="map" parameterType="java.lang.Integer">
+  	SELECT
+		a.program_id as programId,
+		a.area_id AS areaId,
+		a.material_id AS materialId,
+		a.material_order AS materialOrder,
+		a.play_time AS playTime,
+		a.extend,
+		b.material_name as materialName,
+		b.material_path AS materialPath,
+		b.type,
+		b.effective_time AS effectiveTime,
+		b.audit_status AS auditStatus,
+		b.source_url as sourceUrl,
+		b.height,
+		b.width
+	FROM
+		fb_program_material_relation a LEFT JOIN program_material b on a.material_id= b.material_id
+	WHERE
+		a.program_id = #{programId,jdbcType=INTEGER} and b.is_delete=0
+	ORDER BY material_order asc
+  </select>
+
+  <!-- 根据多个节目id查询节目的所有素材 -->
+  <select id="selectByProgramIds" resultType="map">
+	SELECT
+		a.program_id as programId,
+		b.material_id AS materialId,
+		b.material_name as materialName,
+		b.material_path AS materialPath,
+		b.size,
+		b.type,
+		b.effective_time AS effectiveTime,
+		b.audit_status AS auditStatus,
+		b.source_url as sourceUrl
+	FROM
+		fb_program_material_relation a LEFT JOIN program_material b on a.material_id= b.material_id
+	WHERE
+		a.program_id in (
+		<foreach collection="array" item="item" separator="," >
+			#{item}
+		</foreach>
+		) and b.is_delete=0 GROUP BY a.material_id
+  </select>
+
+  <!--   根据素材id查询数据 -->
+  <select id="selectByMaterialId" parameterType="java.lang.Integer" resultType="map">
+  	SELECT
+		program_id as programId,
+		area_id AS areaId,
+		material_id AS materialId,
+		material_order AS materialOrder,
+		play_time AS playTime
+	FROM
+		fb_program_material_relation
+	WHERE
+		material_id = #{materialId}
+  </select>
+ <!--  根据素材id删除数据 -->
+  <delete id="deleteByMaterialId" parameterType="java.lang.Integer">
+  	DELETE FROM fb_program_material_relation where material_id = #{materialId}
+  </delete>
+  <!-- 根据节目id 统计节目每个分区的总时长 并比较总时长最长的为节目的时长 -->
+  <select id="selectProgramTotalTime" parameterType="java.lang.Integer" resultType="map">
+	  	SELECT
+			a.program_id AS programId,
+			a.area_id AS areaId,
+			a.total AS playTime
+		FROM
+			(
+				SELECT
+					*, sum(play_time) total
+				FROM
+					fb_program_material_relation
+				WHERE
+					program_id = #{programId}
+				GROUP BY
+					area_id
+			) a
+		WHERE
+			a.total = (
+				SELECT
+					max(aa.total)
+				FROM
+					(
+						SELECT
+							*, sum(play_time) total
+						FROM
+							fb_program_material_relation
+						WHERE
+							program_id = #{programId}
+						GROUP BY
+							area_id
+					) aa
+			)
+  </select>
+
+  <!-- 根据多个素材id查询是否有已加入节目的 -->
+  <select id="checkMaterialInProg" resultType="map">
+  	SELECT
+		a.material_id as materialId,
+		b.material_name as materialName,
+		a.program_id as programId
+	FROM
+		fb_program_material_relation a
+	LEFT JOIN program_material b ON a.material_id = b.material_id
+	WHERE
+		a.material_id IN (
+		<foreach collection="array" item="item" separator=",">
+			#{item}
+		</foreach>
+		)
+	GROUP BY
+		a.material_id
+  </select>
+
+</mapper>

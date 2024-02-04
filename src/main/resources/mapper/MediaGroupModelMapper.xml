@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.MediaGroupDao" >
+  <!--   根据父节点id查询子节点数据 -->
+  <select id="selectByParentId" parameterType="map" resultType="map">
+    select a.media_group_id as data,
+     a.media_group_id as value,
+     media_group_name AS label,
+     media_group_name AS name,
+     media_group_name AS title,
+      parent_id AS parentId
+     from fb_media_group a
+     LEFT JOIN fb_sysuser_mediagroup b on a.media_group_id = b.media_group_id
+     <where>
+     	parent_id = #{parentId}
+     	<if test="uid != null and uid > 0">
+     		and b.uid = #{uid}
+     	</if>
+     	<if test="gid != null">
+     		and a.media_group_id in (
+     		<foreach collection="gid" item="item" separator=",">
+     			#{item}
+     		</foreach>
+     		)
+     	</if>
+     </where>
+      GROUP by a.media_group_id
+  </select>
+  <!--   根据终端组节点id查询所有子节点id -->
+  <select id="selectAllChild" resultType="java.lang.String" parameterType="java.lang.Integer">
+  	select getChildId(media_group_id) as mediaGroupIds from fb_media_group where media_group_id = #{mediaGroupId}
+  </select>
+
+  <!--   查询父节点不为0的所有子节点数据 -->
+  <select id="selectChild" parameterType="map" resultType="map">
+    select a.media_group_id as data,
+     a.media_group_id as value,
+     media_group_name AS label,
+     media_group_name AS name,
+     media_group_name AS title,
+      parent_id AS parentId
+      from fb_media_group a
+     LEFT JOIN fb_sysuser_mediagroup b on a.media_group_id = b.media_group_id
+     <where>
+     	parent_id != 0
+     	<if test="uid != null and uid > 0">
+     		and b.uid = #{uid}
+     	</if>
+     	<if test="gid != null">
+     		and a.media_group_id in (
+     		<foreach collection="gid" item="item" separator=",">
+     			#{item}
+     		</foreach>
+     		)
+     	</if>
+     </where>
+     GROUP by a.media_group_id
+  </select>
+
+  <!--  新增终端组节点 -->
+  <insert id="insert" parameterType="MediaGroupModel" useGeneratedKeys="true" keyProperty="mediaGroupId">
+    insert into fb_media_group (media_group_name, time_long_warn,
+      parent_id,is_fixed)
+    values (#{mediaGroupName,jdbcType=VARCHAR}, #{timeLongWarn,jdbcType=INTEGER},
+      #{parentId,jdbcType=INTEGER},#{isFixed})
+  </insert>
+  <!-- 批量添加 -->
+  <insert id="batchInsert" parameterType="MediaGroupModel">
+    insert into fb_media_group (media_group_name, time_long_warn,
+      parent_id,is_fixed)
+    values
+    <foreach collection="list" separator="," item="item">
+    (#{item.mediaGroupName,jdbcType=VARCHAR}, #{item.timeLongWarn,jdbcType=INTEGER},
+      #{item.parentId,jdbcType=INTEGER},#{item.isFixed})
+    </foreach>
+  </insert>
+
+
+  <!--  删除终端组节点 -->
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from fb_media_group
+    where media_group_id = #{mediaGroupId,jdbcType=INTEGER}
+  </delete>
+  <!--  批量删除终端组节点 -->
+  <delete id="deleteByPrimaryKeys" >
+    delete from fb_media_group
+    where media_group_id in (
+    <foreach collection="array" separator="," item="item">
+    	#{item}
+    </foreach>
+    )
+  </delete>
+
+  <!--  修改终端组名称 -->
+  <update id="updateGroupName" parameterType="MediaGroupModel" >
+    update fb_media_group
+    set media_group_name = #{mediaGroupName,jdbcType=VARCHAR}
+    where media_group_id = #{mediaGroupId,jdbcType=INTEGER}
+  </update>
+
+  <!--   根据终端组名称查询  用于验证 -->
+  <select id="selectByGroupName" parameterType="map" resultType="map">
+    select media_group_id as mediaGroupId,
+     media_group_name AS mediaGroupName,
+      parent_id AS parentId
+      from fb_media_group
+     <where>
+     	media_group_name = #{mediaGroupName}
+     	<if test="mediaGroupId != null">
+     		and media_group_id != #{mediaGroupId}
+     	</if>
+     </where>
+  </select>
+  <!-- 根据终端组id查询终端信息 -->
+  <select id="selectByPrimaryKey" resultType="map" parameterType="java.lang.Integer" >
+    select media_group_id as mediaGroupId, media_group_name AS mediaGroupName,
+     time_long_warn AS timeLongWarn, parent_id AS parentId,is_fixed as isFixed
+    from fb_media_group
+    where media_group_id = #{mediaGroupId,jdbcType=INTEGER}
+  </select>
+
+  <!-- 判断分组是不是默认的未分组 -->
+  <select id="selectDefaultGroup" parameterType="java.lang.Integer" resultType="map">
+  	SELECT
+		media_group_id AS mediaGroupId,
+		media_group_name AS mediaGroupName,
+		time_long_warn AS timeLongWarn,
+		parent_id AS parentId,
+		led_min as ledMin,
+		is_fixed AS isFixed
+	FROM
+		fb_media_group
+	WHERE
+		is_fixed = 1
+	AND media_group_name LIKE '%未分组'
+	AND media_group_id = #{mediaGroupId}
+  </select>
+  <!-- 分页查询最末节点终端组 -->
+  <select id="selectPageLastGroup" parameterType="map" resultType="map">
+  	SELECT
+		media_group_id AS mediaGroupId,
+		media_group_name AS mediaGroupName,
+		time_long_warn AS timeLongWarn,
+		parent_id AS parentId,
+		is_fixed AS isFixed
+	FROM
+		fb_media_group
+	<where>
+		media_group_id NOT IN (
+			SELECT
+				parent_id
+			FROM
+				fb_media_group
+			UNION ALL
+				SELECT
+					group_member_id AS parent_id
+				FROM
+					sync_group_details
+		)
+		<if test="mediaGroupName != null and mediaGroupName != ''">
+			and media_group_name like concat('%',#{mediaGroupName},'%')
+		</if>
+		LIMIT #{startRow},#{pageSize}
+	</where>
+  </select>
+  <select id="selectPageLastGroupCount" parameterType="map" resultType="java.lang.Integer">
+  	SELECT
+		count(media_group_id)
+	FROM
+		fb_media_group
+	<where>
+		media_group_id NOT IN (
+			SELECT
+				parent_id
+			FROM
+				fb_media_group
+			UNION ALL
+				SELECT
+					group_member_id AS parent_id
+				FROM
+					sync_group_details
+		)
+		<if test="mediaGroupName != null and mediaGroupName != ''">
+			and media_group_name like concat('%',#{mediaGroupName},'%')
+		</if>
+	</where>
+  </select>
+
+</mapper>

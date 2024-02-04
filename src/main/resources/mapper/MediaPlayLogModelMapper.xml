@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.MediaPlayLogDao" >
+  <resultMap id="BaseResultMap" type="MediaPlayLogModel" >
+    <id column="play_log_id" property="playLogId"  />
+    <result column="mid" property="mid" jdbcType="INTEGER" />
+    <result column="machine_code" property="machineCode"/>
+    <result column="program_id" property="programId" jdbcType="INTEGER" />
+    <result column="program_name" property="programName"/>
+    <result column="play_time" property="playTime" jdbcType="INTEGER" />
+    <result column="log_date" property="logDate" jdbcType="DATE" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+  </resultMap>
+
+  <!-- 分页查询  根据终端id查询播放日志信息 -->
+  <select id="selectPage" parameterType="map" resultType="map">
+  	SELECT
+		a.play_log_id as playLogId,
+		a.log_date AS logDate,
+		a.play_time AS playTime,
+		a.program_id AS programId,
+		a.program_name AS programName,
+		a.mid,
+		a.update_time as updateTime,
+		c.client_number AS clientNumber
+	FROM
+		fb_media_play_log a
+	LEFT JOIN fb_program b ON a.program_id = b.program_id
+	LEFT JOIN fb_media_attribute c ON a.machine_code = c.machine_code
+	<where>
+		<if test="machineCode !=null and machineCode != ''">
+			and a.machine_code = #{machineCode}
+		</if>
+	</where>
+	ORDER BY a.log_date desc limit #{startRow},#{pageSize}
+  </select>
+
+  <!--   绑定分页查询  查询总数 -->
+  <select id="selectPageCount" parameterType="map" resultType="java.lang.Integer">
+  	SELECT
+		count(a.play_log_id)
+	FROM
+		fb_media_play_log a
+	LEFT JOIN fb_program b ON a.program_id = b.program_id
+	LEFT JOIN fb_media_attribute c ON a.machine_code = c.machine_code
+	<where>
+		<if test="machineCode !=null and machineCode != ''">
+			and a.machine_code = #{machineCode}
+		</if>
+	</where>
+  </select>
+
+<!--   批量新增 -->
+   <insert id="batchInsert" parameterType="MediaPlayLogModel" >
+    insert into fb_media_play_log (play_log_id,mid,machine_code, program_id,program_name,
+      play_time, log_date, update_time
+      )
+    values
+    <foreach collection="list" item="item" separator=",">
+    (
+     #{item.playLogId},#{item.mid,jdbcType=INTEGER},#{item.machineCode}, #{item.programId,jdbcType=INTEGER},#{item.programName},
+      #{item.playTime,jdbcType=INTEGER}, #{item.logDate,jdbcType=DATE}, #{item.updateTime,jdbcType=TIMESTAMP}
+      )
+    </foreach>
+
+  </insert>
+	<!-- 删除当天的指定节目记录   -->
+   <delete id="deleteByMachineCodeForDay" parameterType="map" >
+    delete from fb_media_play_log where machine_code = #{machineCode} and program_id in (
+    <foreach collection="programIds" item="item" separator=",">
+    	#{item}
+    </foreach>
+    ) and log_date = STR_TO_DATE(#{currentDate},'%Y-%m-%d')
+  </delete>
+
+ <!--  统计素材的播放次数 -->
+  <select id="pageStatisticsPlayTime" parameterType="map" resultType="map">
+  	SELECT
+		a.program_id as materialId,
+		a.program_name AS materialName,
+		sum(a.play_time) as sumTime
+	FROM
+	<if test="isAdmin != null and isAdmin == false">
+		fb_sysuser_mediagroup b LEFT JOIN fb_media_group_relation c on b.media_group_id=c.media_group_id
+		LEFT JOIN fb_media_attribute d on c.mid=d.mid
+		left join
+	</if>
+		fb_media_play_log a
+	<if test="isAdmin != null and isAdmin == false">
+		on d.machine_code=a.machine_code
+	</if>
+	<where>
+		a.log_date BETWEEN #{startDate} AND #{endDate}
+		<if test="isAdmin != null and isAdmin == false">
+			and b.uid = #{uid}
+		</if>
+		<if test="materialName != null and materialName != '' ">
+			and a.program_name LIKE concat('%',#{materialName},'%')
+		</if>
+		<if test="noPlay !=null and noPlay == 0">
+			and a.play_time = 0
+		</if>
+	</where>
+	GROUP BY a.program_id ORDER BY a.program_id limit #{startRow},#{pageSize}
+  </select>
+  <select id="pageStatisticsPlayTimeCount" parameterType="map" resultType="java.lang.Integer">
+  	select count(aa.materialId) from (
+	  	SELECT
+			a.program_id as materialId
+		FROM
+		<if test="isAdmin != null and isAdmin == false">
+			fb_sysuser_mediagroup b LEFT JOIN fb_media_group_relation c on b.media_group_id=c.media_group_id
+			LEFT JOIN fb_media_attribute d on c.mid=d.mid
+			left join
+		</if>
+			fb_media_play_log a
+		<if test="isAdmin != null and isAdmin == false">
+			on d.machine_code=a.machine_code
+		</if>
+		<where>
+			a.log_date BETWEEN #{startDate} AND #{endDate}
+			<if test="isAdmin != null and isAdmin == false">
+				and b.uid = #{uid}
+			</if>
+			<if test="materialName != null and materialName != '' ">
+				and a.program_name LIKE concat('%',#{materialName},'%')
+			</if>
+			<if test="noPlay !=null and noPlay == 0">
+				and a.play_time = 0
+			</if>
+		</where>
+		GROUP BY a.program_id
+	) aa
+  </select>
+  <!-- 查看统计详细 -->
+  <select id="selectPagePlayTimeDetail" parameterType="map" resultType="map">
+  	SELECT
+		a.log_date as logDate,
+		a.program_name AS materialName,
+		a.play_time AS playTime,
+		b.client_name AS clientName,
+		d.media_group_name AS mediaGroupName
+	FROM
+		fb_media_play_log a
+	LEFT JOIN fb_media_attribute b ON a.machine_code = b.machine_code
+	LEFT JOIN fb_media_group_relation c ON b.mid = c.mid
+	LEFT JOIN fb_media_group d ON c.media_group_id = d.media_group_id
+	<if test="isAdmin != null and isAdmin == false">
+		left join fb_sysuser_mediagroup e on d.media_group_id=e.media_group_id
+	</if>
+	WHERE
+		a.program_id = #{materialId}
+	<if test="isAdmin != null and isAdmin == false">
+		and e.uid=#{uid}
+	</if>
+	<if test="noPlay !=null and noPlay == 0">
+		and a.play_time = 0
+	</if>
+	AND a.log_date BETWEEN #{startDate} AND #{endDate}
+	ORDER BY log_date DESC limit #{startRow},#{pageSize}
+  </select>
+  <select id="selectPagePlayTimeDetailCount" parameterType="map" resultType="java.lang.Integer">
+  	SELECT
+		count(a.play_log_id)
+	FROM
+		fb_media_play_log a
+	LEFT JOIN fb_media_attribute b ON a.machine_code = b.machine_code
+	LEFT JOIN fb_media_group_relation c ON b.mid = c.mid
+	LEFT JOIN fb_media_group d ON c.media_group_id = d.media_group_id
+	<if test="isAdmin != null and isAdmin == false">
+		left join fb_sysuser_mediagroup e on d.media_group_id=e.media_group_id
+	</if>
+	WHERE
+		a.program_id = #{materialId}
+		<if test="isAdmin != null and isAdmin == false">
+			and e.uid=#{uid}
+		</if>
+	AND a.log_date BETWEEN #{startDate} AND #{endDate}
+  </select>
+
+
+
+<!--  <sql id="Base_Column_List" >
+    play_log_id, mid, program_id, play_time, log_date, update_time
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select
+    <include refid="Base_Column_List" />
+    from fb_media_play_log
+    where play_log_id = #{playLogId,jdbcType=INTEGER}
+  </select>
+
+
+  <insert id="insertSelective" parameterType="MediaPlayLogModel" >
+    insert into fb_media_play_log
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="playLogId != null" >
+        play_log_id,
+      </if>
+      <if test="mid != null" >
+        mid,
+      </if>
+      <if test="programId != null" >
+        program_id,
+      </if>
+      <if test="playTime != null" >
+        play_time,
+      </if>
+      <if test="logDate != null" >
+        log_date,
+      </if>
+      <if test="updateTime != null" >
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="playLogId != null" >
+        #{playLogId,jdbcType=INTEGER},
+      </if>
+      <if test="mid != null" >
+        #{mid,jdbcType=INTEGER},
+      </if>
+      <if test="programId != null" >
+        #{programId,jdbcType=INTEGER},
+      </if>
+      <if test="playTime != null" >
+        #{playTime,jdbcType=INTEGER},
+      </if>
+      <if test="logDate != null" >
+        #{logDate,jdbcType=DATE},
+      </if>
+      <if test="updateTime != null" >
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="MediaPlayLogModel" >
+    update fb_media_play_log
+    <set >
+      <if test="mid != null" >
+        mid = #{mid,jdbcType=INTEGER},
+      </if>
+      <if test="programId != null" >
+        program_id = #{programId,jdbcType=INTEGER},
+      </if>
+      <if test="playTime != null" >
+        play_time = #{playTime,jdbcType=INTEGER},
+      </if>
+      <if test="logDate != null" >
+        log_date = #{logDate,jdbcType=DATE},
+      </if>
+      <if test="updateTime != null" >
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where play_log_id = #{playLogId,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="MediaPlayLogModel" >
+    update fb_media_play_log
+    set mid = #{mid,jdbcType=INTEGER},
+      program_id = #{programId,jdbcType=INTEGER},
+      play_time = #{playTime,jdbcType=INTEGER},
+      log_date = #{logDate,jdbcType=DATE},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where play_log_id = #{playLogId,jdbcType=INTEGER}
+  </update>-->
+</mapper>

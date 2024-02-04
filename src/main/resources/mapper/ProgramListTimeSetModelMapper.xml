@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.ProgramListTimeSetDao" >
+  <resultMap id="BaseResultMap" type="ProgramListTimeSetModel" >
+    <id column="program_list_time_set_id" property="programListTimeSetId" jdbcType="INTEGER" />
+    <result column="list_detail_id" property="listDetailId" jdbcType="INTEGER" />
+    <result column="start_date" property="startDate" jdbcType="DATE" />
+    <result column="start_time" property="startTime" jdbcType="TIME" />
+    <result column="end_date" property="endDate" jdbcType="DATE" />
+    <result column="end_time" property="endTime" jdbcType="TIME" />
+    <result column="frequency" property="frequency" jdbcType="SMALLINT" />
+  </resultMap>
+  <!-- 根据节目id删除 -->
+  <delete id="deleteByProgramId" parameterType="java.lang.Integer" >
+    delete from fb_program_list_time_set
+    where list_detail_id in (
+    	select list_detail_id from fb_program_list_detail where program_id=#{programId}
+    )
+  </delete>
+  <!-- 批量添加 -->
+  <insert id="batchInsert" parameterType="ProgramListTimeSetModel" >
+    insert into fb_program_list_time_set (list_detail_id,
+      start_date, start_time, end_date,
+      end_time, frequency)
+    values
+    <foreach collection="list" item="item" separator=",">
+    (#{item.listDetailId,jdbcType=INTEGER},
+      #{item.startDate,jdbcType=DATE}, #{item.startTime,jdbcType=TIME}, #{item.endDate,jdbcType=DATE},
+      #{item.endTime,jdbcType=TIME}, #{item.frequency,jdbcType=SMALLINT})
+    </foreach>
+  </insert>
+
+
+</mapper>

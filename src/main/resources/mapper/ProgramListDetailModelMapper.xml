@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.ProgramListDetailDao" >
+
+ <!--  分页查询节目单详细 -->
+  <select id="selectPage" resultType="map" parameterType="map" >
+    SELECT
+		a.program_id as programId,
+		b.program_name AS programName,
+		a.time_mode AS timeMode,
+		a.switch_mode AS switchMode,
+		a.download_mode AS downloadMode,
+		a.program_order AS programOrder,
+		a.play_start_date AS playStartDate,
+		a.play_start_time AS playStartTime,
+		a.play_end_date AS playEndDate,
+		a.play_end_time AS playEndTime,
+		a.week_set AS weekSet,
+		a.play_level AS playLevel,
+		a.frequency
+	FROM
+		fb_program_list_detail a LEFT JOIN fb_program b on a.program_id=b.program_id
+	<where>
+		<if test="listId != null and listId > 0">
+			and a.list_id =#{listId}
+		</if>
+	</where>
+	ORDER BY a.program_order asc limit #{startRow},#{pageSize}
+  </select>
+
+  <select id="selectPageCount" resultType="java.lang.Integer" parameterType="map" >
+    SELECT
+		count(*)
+	FROM
+		fb_program_list_detail a LEFT JOIN fb_program b on a.program_id=b.program_id
+	<where>
+		<if test="listId != null and listId > 0">
+			and a.list_id =#{listId}
+		</if>
+	</where>
+  </select>
+ <!--   批量添加节目单详细 -->
+  <insert id="batchInsert" parameterType="ProgramListDetailModel" useGeneratedKeys="true" keyProperty="listDetailId">
+    insert into fb_program_list_detail (list_id, program_id,
+      time_mode, switch_mode, download_mode,
+      program_order, play_start_date, play_start_time,
+      play_end_date, play_end_time, week_set,
+      play_level, frequency)
+    values
+    <foreach collection="list" item="item" separator=",">
+     (#{item.listId,jdbcType=INTEGER}, #{item.programId,jdbcType=INTEGER},
+      #{item.timeMode,jdbcType=TINYINT}, #{item.switchMode,jdbcType=TINYINT}, #{item.downloadMode,jdbcType=TINYINT},
+      #{item.programOrder,jdbcType=TINYINT}, #{item.playStartDate,jdbcType=DATE}, #{item.playStartTime,jdbcType=TIME},
+      #{item.playEndDate,jdbcType=DATE}, #{item.playEndTime,jdbcType=TIME}, #{item.weekSet,jdbcType=VARCHAR},
+      #{item.playLevel,jdbcType=TINYINT}, #{item.frequency,jdbcType=INTEGER})
+    </foreach>
+  </insert>
+  <!-- 根据节目单id查询详细 -->
+  <select id="selectByListId" resultType="map" parameterType="java.lang.Integer" >
+    SELECT
+		a.program_id as programId,
+		b.program_name AS programName,
+		a.time_mode AS timeMode,
+		a.switch_mode AS switchMode,
+		a.download_mode AS downloadMode,
+		a.program_order AS programOrder,
+		a.play_start_date AS playStartDate,
+		a.play_start_time AS playStartTime,
+		a.play_end_date AS playEndDate,
+		a.play_end_time AS playEndTime,
+		a.week_set AS weekSet,
+		a.play_level AS playLevel,
+		a.frequency
+	FROM
+		fb_program_list_detail a LEFT JOIN fb_program b on a.program_id=b.program_id
+	where a.list_id =#{listId} ORDER BY a.program_order asc
+  </select>
+  <!-- 根据节目单id查询详细 -->
+  <select id="selectByListId2" resultType="ProgramListDetailModel" parameterType="java.lang.Integer" >
+    SELECT
+    	a.list_detail_id as listDetailId,
+		a.program_id as programId,
+		a.time_mode AS timeMode,
+		a.switch_mode AS switchMode,
+		a.download_mode AS downloadMode,
+		a.program_order AS programOrder,
+		a.play_start_date AS playStartDate,
+		a.play_start_time AS playStartTime,
+		a.play_end_date AS playEndDate,
+		a.play_end_time AS playEndTime,
+		a.week_set AS weekSet,
+		a.play_level AS playLevel,
+		a.frequency
+	FROM
+		fb_program_list_detail a LEFT JOIN fb_program b on a.program_id=b.program_id
+	where a.list_id =#{listId} ORDER BY a.program_order asc
+  </select>
+
+  <!--  根据节目id删除 -->
+  <delete id="deleteByProgramId" parameterType="java.lang.Integer" >
+    delete from fb_program_list_detail
+    where program_id = #{programId,jdbcType=INTEGER}
+  </delete>
+  <!-- 根据节目id查询 -->
+  <select id="selectByCondition" parameterType="map" resultType="map">
+  	  SELECT
+  	  	a.list_detail_id as listDetailId,
+  	  	a.list_id as listId,
+		a.program_id as programId,
+		a.time_mode AS timeMode,
+		a.switch_mode AS switchMode,
+		a.download_mode AS downloadMode,
+		a.program_order AS programOrder,
+		a.play_start_date AS playStartDate,
+		a.play_start_time AS playStartTime,
+		a.play_end_date AS playEndDate,
+		a.play_end_time AS playEndTime,
+		a.week_set AS weekSet,
+		a.play_level AS playLevel,
+		a.frequency
+	FROM
+		fb_program_list_detail a
+	<where>
+		a.program_id = #{programId}
+	</where>
+  </select>
+
+</mapper>

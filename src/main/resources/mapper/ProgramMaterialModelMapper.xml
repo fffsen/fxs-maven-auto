@@ -1,0 +1,590 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.ProgramMaterialDao" >
+ <!-- <resultMap id="BaseResultMap" type="ProgramMaterialModel" >
+    <id column="material_id" property="materialId" jdbcType="INTEGER" />
+    <result column="material_name" property="materialName" jdbcType="VARCHAR" />
+    <result column="creator_id" property="creatorId" jdbcType="INTEGER" />
+    <result column="material_path" property="materialPath" jdbcType="VARCHAR" />
+    <result column="type" property="type" jdbcType="TINYINT" />
+    <result column="is_private" property="isPrivate" jdbcType="TINYINT" />
+    <result column="size" property="size" jdbcType="DECIMAL" />
+    <result column="upload_time" property="uploadTime" jdbcType="TIMESTAMP" />
+    <result column="auditor_id" property="auditorId" jdbcType="INTEGER" />
+    <result column="audit_status" property="auditStatus" jdbcType="TINYINT" />
+    <result column="audit_remark" property="auditRemark" jdbcType="VARCHAR" />
+    <result column="effective_time" property="effectiveTime" jdbcType="TIMESTAMP" />
+    <result column="height" property="height" jdbcType="DECIMAL" />
+    <result column="width" property="width" jdbcType="DECIMAL" />
+    <result column="time_lenth" property="timeLenth" jdbcType="INTEGER" />
+    <result column="source_url" property="sourceUrl" jdbcType="VARCHAR" />
+    <result column="is_delete" property="isDelete" jdbcType="TINYINT" />
+    <result column="apk_version" property="apkVersion"/>
+  </resultMap>-->
+
+  <sql id="selectPage_sql">
+  	  SELECT
+			a.material_id AS materialId,
+			a.material_name AS materialName,
+			a.size,
+			a.creator_id AS creatorId,
+			b.user_name as creator,
+			a.type,
+			a.upload_time AS uploadTime,
+			a.effective_time AS effectiveTime,
+			a.is_private AS isPrivate,
+			a.auditor_id AS auditorId,
+			c.user_name AS auditor,
+			a.audit_status AS auditStatus,
+			a.material_path AS materialPath,
+			a.height,
+			a.width,
+			a.time_lenth AS timeLenth,
+			a.source_url AS sourceUrl
+		FROM
+			program_material a
+		LEFT JOIN fb_sys_user b ON a.creator_id = b.uid
+		LEFT JOIN fb_sys_user c ON a.auditor_id = c.uid
+
+  </sql>
+  <sql id="selectPage_sql1">
+  	  SELECT
+			a.material_id AS materialId,
+			a.material_name AS materialName,
+			a.size,
+			a.creator_id AS creatorId,
+			b.user_name as creator,
+			a.type,
+			a.upload_time AS uploadTime,
+			a.effective_time AS effectiveTime,
+			a.is_private AS isPrivate,
+			a.auditor_id AS auditorId,
+			c.user_name AS auditor,
+			a.audit_status AS auditStatus,
+			a.material_path AS materialPath,
+			a.height,
+			a.width,
+			a.time_lenth AS timeLenth,
+			a.source_url AS sourceUrl,
+			count(e.publish_id) as publishNum
+		FROM
+			program_material a
+		LEFT JOIN fb_sys_user b ON a.creator_id = b.uid
+		LEFT JOIN fb_sys_user c ON a.auditor_id = c.uid
+		LEFT JOIN fb_program_material_relation d on a.material_id=d.material_id
+		LEFT JOIN fb_program_publish_record e on d.program_id=e.program_id
+
+  </sql>
+
+  <select id="selectPage" parameterType="map" resultType="map">
+  	   <include refid="selectPage_sql1"></include>
+	   <where>
+	   		<if test="materialName != null and materialName != '' and folderId != null"><!-- 模糊匹配的子文件夹  or的开始-->
+				(a.is_delete =0 AND a.material_id in (
+					<foreach collection="folderId" separator="," item="item">
+						#{item}
+					</foreach>
+				) ) or (
+			</if>
+			a.is_delete =0
+			<!-- <if test="isPrivate == 1">私有查询共享的和自己创建的
+				and (a.is_private=0 or a.creator_id =#{creatorId})
+			</if> -->
+			<if test="sameGroupUserId != null">
+				and a.creator_id in (
+				<foreach collection="sameGroupUserId" separator="," item="item">
+					#{item}
+				</foreach>
+				)
+			</if>
+			<if test="materialName != null and materialName != ''">
+				and a.material_name like concat("%",#{materialName},"%")
+			</if>
+			<if test="type != null and type > 0"><!-- 如果是匹配查询 要排除文件夹类型 -->
+				<choose>
+					<when test="materialName != null and materialName != ''">and a.type = #{type}</when>
+					<otherwise>and a.type in (0,#{type})</otherwise>
+				</choose>
+			</if>
+			<if test="type == null and materialName != null and materialName != ''"><!-- 如果是匹配查询 要排除文件夹类型 -->
+				and a.type != 0
+			</if>
+			<if test="materialPath != null and materialPath != ''">
+				and a.material_path = #{materialPath}
+			</if>
+			<if test="auditStatus != null ">
+				and a.audit_status = #{auditStatus}
+			</if>
+			<if test="materialName != null and materialName != '' and folderId != null"><!-- 模糊匹配的子文件夹 or的结束-->
+				)
+			</if>
+		</where> GROUP BY a.material_id ORDER BY a.type asc,a.material_id DESC limit #{startRow},#{pageSize}
+
+  	 <!-- select * from (
+  	   (<include refid="selectPage_sql"></include>
+  	   <where>
+  	   		a.is_delete =0 and a.type= 0
+			<if test="isPrivate == 1">私有查询共享的和自己创建的
+				and (a.is_private=0 or a.creator_id =#{creatorId})
+			</if>
+
+			<if test="materialName != null and materialName != ''">
+				and a.material_name like concat("%",#{materialName},"%")
+			</if>
+
+			<if test="materialPath != null and materialPath != ''">
+				and a.material_path = #{materialPath}
+			</if>
+  	   </where> ORDER BY a.upload_time deSC limit 999999999)
+   	   union all
+	   (<include refid="selectPage_sql"></include>
+	   <where>
+			a.is_delete =0 and a.type != 0
+			<if test="isPrivate == 1">私有查询共享的和自己创建的
+				and (a.is_private=0 or a.creator_id =#{creatorId})
+			</if>
+
+			<if test="materialName != null and materialName != ''">
+				and a.material_name like concat("%",#{materialName},"%")
+			</if>
+			<if test="type != null and type != ''">
+				and a.type= #{type}
+			</if>
+			<if test="materialPath != null and materialPath != ''">
+				and a.material_path = #{materialPath}
+			</if>
+		</where> ORDER BY a.upload_time deSC limit 999999999)
+		) aa limit #{startRow},#{pageSize} -->
+
+  </select>
+  <select id="selectPageCount" parameterType="map" resultType="java.lang.String">
+  		SELECT
+			count(a.material_id)
+		FROM
+			program_material a
+		LEFT JOIN fb_sys_user b ON a.creator_id = b.uid
+		LEFT JOIN fb_sys_user c ON a.auditor_id = c.uid
+  		<where>
+			<if test="materialName != null and materialName != '' and folderId != null"><!-- 模糊匹配的子文件夹  or的开始-->
+				(a.is_delete =0 AND a.material_id in (
+					<foreach collection="folderId" separator="," item="item">
+						#{item}
+					</foreach>
+				) ) or (
+			</if>
+			a.is_delete =0
+			<!-- <if test="isPrivate == 1">私有查询共享的和自己创建的
+				and (a.is_private=0 or a.creator_id =#{creatorId})
+			</if> -->
+			<if test="sameGroupUserId != null">
+				and a.creator_id in (
+				<foreach collection="sameGroupUserId" separator="," item="item">
+					#{item}
+				</foreach>
+				)
+			</if>
+			<if test="materialName != null and materialName != ''">
+				and a.material_name like concat("%",#{materialName},"%")
+			</if>
+			<if test="type != null and type > 0"><!-- 如果是匹配查询 要排除文件夹类型 -->
+				<choose>
+					<when test="materialName != null and materialName != ''">and a.type = #{type}</when>
+					<otherwise>and a.type in (0,#{type})</otherwise>
+				</choose>
+			</if>
+			<if test="type == null and materialName != null and materialName != ''"><!-- 如果是匹配查询 要排除文件夹类型 -->
+				and a.type != 0
+			</if>
+			<if test="materialPath != null and materialPath != ''">
+				and a.material_path = #{materialPath}
+			</if>
+			<if test="auditStatus != null ">
+				and a.audit_status = #{auditStatus}
+			</if>
+			<if test="materialName != null and materialName != '' and folderId != null"><!-- 模糊匹配的子文件夹 or的结束-->
+				)
+			</if>
+		</where>
+
+	  <!--select count(*) from (
+  	   <include refid="selectPage_sql"></include>
+  	    <where>
+  	   		a.is_delete =0 and a.type= 0
+			<if test="isPrivate == 1">私有查询共享的和自己创建的
+				and (a.is_private=0 or a.creator_id =#{creatorId})
+			</if>
+
+			<if test="materialName != null and materialName != ''">
+				and a.material_name like concat("%",#{materialName},"%")
+			</if>
+
+			<if test="materialPath != null and materialPath != ''">
+				and a.material_path = #{materialPath}
+			</if>
+  	   </where>
+   	   union all
+	   <include refid="selectPage_sql"></include>
+	   <where>
+			a.is_delete =0 and a.type != 0
+			<if test="isPrivate == 1">私有查询共享的和自己创建的
+				and (a.is_private=0 or a.creator_id =#{creatorId})
+			</if>
+
+			<if test="materialName != null and materialName != ''">
+				and a.material_name like concat("%",#{materialName},"%")
+			</if>
+			<if test="type != null and type != ''">
+				and a.type= #{type}
+			</if>
+			<if test="materialPath != null and materialPath != ''">
+				and a.material_path = #{materialPath}
+			</if>
+		</where>
+		) aa -->
+  </select>
+ <!--  夸文件夹查询素材处理   查询指定目录下 包含模糊匹配的素材的子文件夹 -->
+  <select id="selectFolderByMaterial" parameterType="map" resultType="map">
+  	  SELECT
+			GROUP_CONCAT(a.material_id) AS materialIds,
+		    1 as gid
+	   FROM
+			program_material a
+	   where a.material_name in (
+			SELECT
+				SUBSTR(REPLACE(a.material_path,#{materialPath},''),1,INSTR(REPLACE(a.material_path,#{materialPath},''),'/')-1) as fname
+			FROM
+				program_material a
+			<where>
+				a.is_delete =0 <!-- and a.material_path !=#{materialPath} -->
+				<!-- <if test="isPrivate == 1">私有查询共享的和自己创建的
+					and (a.is_private=0 or a.creator_id =#{creatorId})
+				</if> -->
+				<if test="sameGroupUserId != null">
+					and a.creator_id in (
+					<foreach collection="sameGroupUserId" separator="," item="item">
+						#{item}
+					</foreach>
+					)
+				</if>
+				<if test="type != null and type > 0"><!-- 如果是匹配查询 要排除文件夹类型 -->
+					and a.type = #{type}
+				</if>
+				<if test="materialName != null and materialName != ''">
+					and a.material_name like concat("%",#{materialName},"%")
+				</if>
+				<if test="materialPath != null and materialPath != ''"><!-- 这里控制只查询子目录，根目录的不包括 所以用的是 like ‘xxx_%’的匹配方式-->
+					and a.material_path like concat(#{materialPath},"_%")
+				</if>
+				<if test="auditStatus != null ">
+					and a.audit_status = #{auditStatus}
+				</if>
+			</where>
+		) and a.material_path = #{materialPath} GROUP BY gid
+
+  </select>
+
+  <select id="selectByPrimaryKey" resultType="map" parameterType="java.lang.Integer" >
+    SELECT
+			material_id AS materialId,
+			material_name AS materialName,
+			size,
+			creator_id AS creatorId,
+			b.user_name as creator,
+			type,
+			upload_time AS uploadTime,
+			effective_time AS effectiveTime,
+			is_private AS isPrivate,
+			auditor_id AS auditorId,
+			c.user_name AS auditor,
+			audit_status AS auditStatus,
+			audit_remark as auditRemark,
+			material_path AS materialPath,
+			height,
+			width,
+			time_lenth AS timeLenth,
+			source_url AS sourceUrl,
+			apk_version as apkVersion,
+			ai_audit_status as aiAuditStatus
+		FROM
+			program_material a
+		LEFT JOIN fb_sys_user b ON a.creator_id = b.uid
+		LEFT JOIN fb_sys_user c ON a.auditor_id = c.uid
+		where material_id = #{materialId,jdbcType=INTEGER}
+  </select>
+  <!-- 根据多个素材id查询 -->
+  <select id="selectByPrimaryKeys" resultType="map" >
+    SELECT
+			material_id AS materialId,
+			material_name AS materialName,
+			size,
+			creator_id AS creatorId,
+			b.user_name as creator,
+			type,
+			upload_time AS uploadTime,
+			effective_time AS effectiveTime,
+			is_private AS isPrivate,
+			auditor_id AS auditorId,
+			c.user_name AS auditor,
+			audit_status AS auditStatus,
+			audit_remark as auditRemark,
+			material_path AS materialPath,
+			height,
+			width,
+			time_lenth AS timeLenth,
+			source_url AS sourceUrl
+		FROM
+			program_material a
+		LEFT JOIN fb_sys_user b ON a.creator_id = b.uid
+		LEFT JOIN fb_sys_user c ON a.auditor_id = c.uid
+		where material_id in (
+		<foreach collection="array" item="item" separator=",">
+			#{item}
+		</foreach>
+		)
+  </select>
+  <!-- 根据版本号查素材信息 -->
+  <select id="selectByApkVersion" resultType="map" parameterType="java.lang.String">
+  	SELECT
+		material_id AS materialId,
+		material_name AS materialName,
+		size,
+		type,
+		material_path AS materialPath,
+		apk_version AS apkVersion
+	FROM
+		program_material
+	WHERE
+		type = 6
+	AND is_delete = 0
+	AND apk_version = #{apkVersion}
+  </select>
+
+  <!--   根据素材名称查询 -->
+  <select id="selectByMaterialName"  resultType="map">
+	SELECT
+		material_id as materialId,
+		material_name AS materialName,
+		material_path AS materialPath,
+		type
+	FROM
+		program_material
+	WHERE
+		material_name in (
+		<foreach collection="array" item="item" separator=",">
+			#{item}
+		</foreach>
+		) AND is_delete = 0
+  </select>
+  <!--   校验素材名称是否重复 -->
+  <select id="checkMaterialName"  resultType="map" parameterType="map">
+	SELECT
+		material_id as materialId,
+		material_name AS materialName,
+		material_path AS materialPath,
+		type
+	FROM
+		program_material
+	WHERE
+		material_name in (
+		<foreach collection="materialNames" item="item" separator=",">
+			#{item}
+		</foreach>
+		) AND is_delete = 0
+		<if test="type != null">
+			and type=#{type}
+		</if>
+		<if test="materialIds != null">
+			and material_id not in (
+				<foreach collection="materialIds" item="item" separator=",">
+					#{item}
+				</foreach>
+			)
+		</if>
+
+  </select>
+
+   <insert id="batchInsert" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="materialId">
+    insert into program_material (material_name, creator_id,
+      material_path, type, is_private,
+      size, upload_time, auditor_id,
+      audit_status, audit_remark, effective_time,
+      height, width, time_lenth,
+      source_url, is_delete,apk_version,check_code,ai_audit_status)
+    values
+     <foreach collection="list" item="item" index="index" separator="," >
+	    (#{item.materialName,jdbcType=VARCHAR}, #{item.creatorId,jdbcType=INTEGER},
+	      #{item.materialPath,jdbcType=VARCHAR}, #{item.type,jdbcType=TINYINT}, #{item.isPrivate,jdbcType=TINYINT},
+	      #{item.size,jdbcType=DECIMAL}, #{item.uploadTime,jdbcType=TIMESTAMP}, #{item.auditorId,jdbcType=INTEGER},
+	      #{item.auditStatus,jdbcType=TINYINT}, #{item.auditRemark,jdbcType=VARCHAR}, #{item.effectiveTime,jdbcType=TIMESTAMP},
+	      #{item.height,jdbcType=DECIMAL}, #{item.width,jdbcType=DECIMAL}, #{item.timeLenth,jdbcType=INTEGER},
+	      #{item.sourceUrl,jdbcType=VARCHAR}, 0,#{item.apkVersion},#{item.checkCode},#{item.aiAuditStatus})
+      </foreach>
+  </insert>
+
+  <update id="updateMaterial" parameterType="ProgramMaterialModel">
+  	update program_material
+  	<set>
+  		 <if test="materialName != null and materialName !=''" >
+	        material_name = #{materialName,jdbcType=VARCHAR},
+	     </if>
+	     <if test="effectiveTime != null" >
+	        effective_time=#{effectiveTime},
+	     </if>
+	     <if test="effectiveTime == null" ><!-- 永久设置 -->
+	        effective_time=null,
+	     </if>
+	     <if test="isPrivate != null" >
+	        is_private=#{isPrivate},
+	     </if>
+	     <if test="sourceUrl != null" >
+	        source_url=#{sourceUrl},
+	     </if>
+	     <if test="size != null and size > 0" >
+	        size = #{size,jdbcType=DECIMAL},
+	     </if>
+  	</set>
+  	where material_id=#{materialId}
+  </update>
+
+  <update id="updateMaterial2" parameterType="ProgramMaterialModel">
+  	update program_material
+  	<set>
+  		 <if test="materialName != null and materialName !=''" >
+	        material_name = #{materialName,jdbcType=VARCHAR},
+	     </if>
+	     <if test="sourceUrl != null" >
+	        source_url=#{sourceUrl},
+	     </if>
+	     <if test="size != null and size > 0" >
+	        size = #{size,jdbcType=DECIMAL},
+	     </if>
+	     <if test="auditStatus != null">
+	     audit_status = #{auditStatus},
+	     auditor_id=#{auditorId},
+	     audit_remark=#{auditRemark},
+	     </if>
+
+  	</set>
+  	where material_id=#{materialId}
+  </update>
+
+  <update id="updateMaterialPath" parameterType="ProgramMaterialModel">
+  	update program_material  set material_path = #{materialPath} where material_id=#{materialId}
+  </update>
+  <update id="updateAuditStatus" parameterType="ProgramMaterialModel">
+  	update program_material set audit_status = #{auditStatus},auditor_id=#{auditorId},audit_remark=#{auditRemark} where  material_id=#{materialId}
+  </update>
+  <update id="updateIsDelete" parameterType="ProgramMaterialModel">
+  	update program_material set is_delete = #{isDelete} where  material_id=#{materialId}
+  </update>
+  <update id="updateAiAudit" parameterType="ProgramMaterialModel">
+  	update program_material set ai_audit_status = #{aiAuditStatus} where  material_id=#{materialId}
+  </update>
+  <!-- 查询所有升级包信息 -->
+  <select id="selectApk" parameterType="map" resultType="map">
+  	SELECT
+			a.material_id AS materialId,
+			a.material_name AS materialName,
+			a.size,
+			a.creator_id AS creatorId,
+			b.user_name as creator,
+			a.type,
+			a.upload_time AS uploadTime,
+			a.effective_time AS effectiveTime,
+			a.is_private AS isPrivate,
+			a.auditor_id AS auditorId,
+			c.user_name AS auditor,
+			a.audit_status AS auditStatus,
+			a.material_path AS materialPath,
+			a.height,
+			a.width,
+			a.time_lenth AS timeLenth,
+			a.source_url AS sourceUrl,
+			a.apk_version as apkVersion
+		FROM
+			program_material a
+		LEFT JOIN fb_sys_user b ON a.creator_id = b.uid
+		LEFT JOIN fb_sys_user c ON a.auditor_id = c.uid
+	<where>
+		a.is_delete =0 and a.type = 6 and (a.is_private=0 or a.creator_id =#{creatorId})
+		<if test="auditStatus != null">
+			and a.audit_status = #{auditStatus}
+		</if>
+	</where>
+	ORDER BY a.material_id desc limit #{startRow},#{pageSize}
+  </select>
+  <!-- 查询所有升级包信息 -->
+  <select id="selectApkCount" parameterType="map" resultType="java.lang.String">
+  	SELECT
+			count(a.material_id)
+		FROM
+			program_material a
+		LEFT JOIN fb_sys_user b ON a.creator_id = b.uid
+		LEFT JOIN fb_sys_user c ON a.auditor_id = c.uid
+	<where>
+		a.is_delete =0 and a.type = 6 and (a.is_private=0 or a.creator_id =#{creatorId})
+		<if test="auditStatus != null">
+			and a.audit_status = #{auditStatus}
+		</if>
+	</where>
+  </select>
+
+  <!-- 不分页查询md5为空的素材 不包括文件夹、apk -->
+  <select id="selectNullMD5" parameterType="map" resultType="map">
+  		SELECT
+			a.material_id AS materialId,
+			a.material_name AS materialName,
+			a.size,
+			a.creator_id AS creatorId,
+			a.type,
+			a.upload_time AS uploadTime,
+			a.effective_time AS effectiveTime,
+			a.is_private AS isPrivate,
+			a.auditor_id AS auditorId,
+			a.audit_status AS auditStatus,
+			a.material_path AS materialPath,
+			a.height,
+			a.width,
+			a.time_lenth AS timeLenth,
+			a.source_url AS sourceUrl,
+			a.check_code as checkCode
+		FROM
+			program_material a
+		WHERE
+			a.type in (1,2,3,4,5) and a.is_delete =0 and a.check_code =''
+  </select>
+  <update id="updateMD5" parameterType="ProgramMaterialModel">
+  	update program_material set check_code = #{checkCode} where  material_id=#{materialId}
+  </update>
+
+  <!-- 根据素材id查询广告发布到的终端组及巡视员 -->
+  <select id="selectInspectorByMaterialId" parameterType="map" resultType="map">
+  	SELECT
+		a.material_id as materialId,
+		a.material_name AS materialName,
+		b.program_id AS programId,
+		GROUP_CONCAT(c.media_group_id) AS mediaGroupIdStr,
+		d.uid,
+		e.user_name AS inspector
+	FROM
+		program_material a
+	LEFT JOIN fb_program_material_relation b ON a.material_id = b.material_id
+	LEFT JOIN fb_program_publish_record c ON b.program_id = c.program_id
+	LEFT JOIN fb_sysuser_mediagroup d ON c.media_group_id = d.media_group_id
+	LEFT JOIN fb_sys_user e ON d.uid = e.uid
+	WHERE
+		a.material_id = #{materialId}
+	AND d.uid IN (
+		SELECT
+			bb.uid
+		FROM
+			pr_roles aa
+		LEFT JOIN pr_user_roles bb ON aa.role_id = bb.role_id
+		WHERE
+			aa.role_name = '巡视员'
+	)
+	GROUP BY d.uid
+  </select>
+
+
+</mapper>

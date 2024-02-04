@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.SysuserGroupMediagroupDao" >
+ <!-- <resultMap id="BaseResultMap" type="SysuserGroupMediagroupModel" >
+    <result column="u_group_id" property="uGroupId" jdbcType="INTEGER" />
+    <result column="media_group_id" property="mediaGroupId" jdbcType="INTEGER" />
+  </resultMap>-->
+
+  <!--   批量添加 -->
+  <insert id="batchInsert" parameterType="SysuserGroupMediagroupModel" >
+    insert into fb_sysuser_group_mediagroup (u_group_id, media_group_id)
+    values
+    <foreach collection="list" item="item" separator=",">
+    	(#{item.uGroupId,jdbcType=INTEGER}, #{item.mediaGroupId,jdbcType=INTEGER})
+    </foreach>
+  </insert>
+
+  <!-- 根据用户id删除数据 -->
+  <delete id="deleteByUgroupId" >
+  	delete from fb_sysuser_group_mediagroup where u_group_id in (
+  	<foreach collection="array" item="item" separator=",">
+  		#{item}
+  	</foreach>
+  	)
+  </delete>
+
+  <!-- 根据用户组id查询分组信息 -->
+  <select id="selectByUgroupId" parameterType="java.lang.Integer" resultType="map">
+  	select u_group_id as uGroupId,media_group_id as mediaGroupId from fb_sysuser_group_mediagroup where u_group_id = #{uGroupId}
+  </select>
+
+  <!-- 根据用户组id查询组的固定终端组id -->
+  <select id="selectUserGroupOfFixed" parameterType="map" resultType="map">
+  		SELECT
+			a.u_group_id as uGroupId,a.media_group_id as mediaGroupId,b.media_group_name as mediaGroupName
+		FROM
+			fb_sysuser_group_mediagroup a
+		LEFT JOIN fb_media_group b ON a.media_group_id = b.media_group_id
+		WHERE
+			a.u_group_id = #{uGroupId}
+		AND b.is_fixed = #{isFixed}
+  </select>
+
+  <!-- 根据用户id查询  用户是否管理所有分组 -->
+ <!--  <select id="selectIsallByUgroupId" parameterType="java.lang.Integer" resultType="map">
+  	select u_group_id as uGroupId,media_group_id as mediaGroupId from fb_sysuser_group_mediagroup where u_group_id = #{uGroupId} and is_all = 1
+  </select> -->
+
+  <!-- 根据用户id查询用户能操作的终端组 -->
+  <select id="selectMediaGroupByUserGroup" parameterType="map" resultType="map">
+  	SELECT
+		 d.media_group_id as data,
+	     d.media_group_id as value,
+	     d.media_group_name AS label,
+	     d.media_group_name AS name,
+	     d.media_group_name AS title,
+	     d.parent_id AS parentId
+	FROM
+		fb_sys_user a
+	LEFT JOIN fb_sys_user_group b ON a.u_group_id = b.u_group_id
+	LEFT JOIN fb_sysuser_group_mediagroup c ON b.u_group_id = c.u_group_id
+	LEFT JOIN fb_media_group d ON c.media_group_id = d.media_group_id
+	<where>
+		a.uid = #{uid} and c.media_group_id != 0
+		<if test="selectType == 'parent'">
+			and d.parent_id = 0
+		</if>
+		<if test="selectType == 'child'">
+			and d.parent_id != 0
+		</if>
+	</where>
+  </select>
+
+  <!-- 根据用户组id查询能操作的终端组 -->
+  <select id="selectMediaGroupByUGroupId" parameterType="map" resultType="map">
+  	SELECT
+		 d.media_group_id as data,
+	     d.media_group_id as value,
+	     d.media_group_name AS label,
+	     d.media_group_name AS name,
+	     d.media_group_name AS title,
+	     d.parent_id AS parentId
+	FROM
+	fb_sys_user_group b LEFT JOIN fb_sysuser_group_mediagroup c ON b.u_group_id = c.u_group_id
+	LEFT JOIN fb_media_group d ON c.media_group_id = d.media_group_id
+	<where>
+		b.u_group_id = #{uGroupId} and c.media_group_id != 0
+		<if test="selectType == 'parent'">
+			and d.parent_id = 0
+		</if>
+		<if test="selectType == 'child'">
+			and d.parent_id != 0
+		</if>
+	</where>
+  </select>
+
+  <!-- 根据终端组id查所属的用户组信息 -->
+  <select id="selectByMediaGroupId" parameterType="map" resultType="map">
+  	select u_group_id as uGroupId,media_group_id as mediaGroupId from fb_sysuser_group_mediagroup where media_group_id = #{mediaGroupId}
+  </select>
+
+  <!-- 根据终端组id 删除该终端组的配置信息 -->
+  <delete id="deleteByMediaGroupIds" >
+  	delete from fb_sysuser_group_mediagroup where media_group_id in (
+  	<foreach collection="array" separator="," item="item">
+  		#{item}
+  	</foreach>
+  	)
+  </delete>
+
+  <!-- 根据用户组id查询所管理的终端组的未分组数据 -->
+  <select id="selectNoGroupByUgroupId" parameterType="java.lang.Integer" resultType="map">
+  	SELECT
+		b.media_group_id as mediaGroupId,
+		b.media_group_name as mediaGroupName
+	FROM
+		fb_sysuser_group_mediagroup a LEFT JOIN fb_media_group b on a.media_group_id=b.media_group_id
+	WHERE
+		a.u_group_id = #{uGroupId} and b.is_fixed = 1
+	AND b.media_group_name LIKE '%未分组'
+  </select>
+
+  <!-- 验证用户组配置的终端组是否只有一个固定的未分组 -->
+  <select id="vaildNoGroup" parameterType="map" resultType="map">
+   	SELECT
+		b.media_group_id as mediaGroupId,
+		b.media_group_name as mediaGroupName
+	FROM
+		fb_media_group b
+	WHERE
+		b.is_fixed = 1 and b.media_group_id in (
+		<foreach collection="groupIds" separator="," item="item">
+			#{item}
+		</foreach>
+		)
+	AND b.media_group_name LIKE '%未分组'
+
+  <!-- 	SELECT
+		b.media_group_id as mediaGroupId,
+		b.media_group_name as mediaGroupName
+	FROM
+		fb_sysuser_group_mediagroup a
+	LEFT JOIN fb_media_group b ON a.media_group_id = b.media_group_id
+	WHERE
+		a.u_group_id = #{uGroupId}
+	AND b.is_fixed = 1
+	AND media_group_name LIKE '%未分组' -->
+  </select>
+
+
+
+</mapper>

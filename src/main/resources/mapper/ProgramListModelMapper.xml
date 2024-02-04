@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.ProgramListDao" >
+  <!-- 分页查询节目单 -->
+   <select id="selectPage" resultType="map" parameterType="map" >
+    SELECT
+		list_id as listId,
+		list_name AS listName,
+		create_time AS createTime
+	FROM
+		fb_program_list
+	<where>
+		<if test="listName != null and listName != ''">
+		 	and list_name like concat('%',#{listName},'%')
+		</if>
+		<if test="sameGroupUserId != null">
+			and creator_id in (
+			<foreach collection="sameGroupUserId" separator="," item="item">
+				#{item}
+			</foreach>
+			)
+		</if>
+	</where>
+	order by list_id desc limit #{startRow},#{pageSize}
+  </select>
+
+  <select id="selectPageCount" resultType="java.lang.Integer" parameterType="map" >
+    SELECT
+		count(list_id)
+	FROM
+		fb_program_list
+	<where>
+		<if test="listName != null and listName != ''">
+		 	and list_name like concat('%',#{listName},'%')
+		</if>
+		<if test="sameGroupUserId != null">
+			and creator_id in (
+			<foreach collection="sameGroupUserId" separator="," item="item">
+				#{item}
+			</foreach>
+			)
+		</if>
+	</where>
+  </select>
+  <!--   单个添加节目单 -->
+  <insert id="insert" parameterType="ProgramListModel" useGeneratedKeys="true" keyProperty="listId">
+    insert into fb_program_list (list_name, create_time,
+      creator_id)
+    values (#{listName,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP},
+      #{creatorId,jdbcType=INTEGER})
+  </insert>
+
+  <!-- 删除节目单 -->
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from fb_program_list
+    where list_id = #{listId,jdbcType=INTEGER}
+  </delete>
+
+
+</mapper>

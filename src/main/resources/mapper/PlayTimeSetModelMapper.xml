@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.PlayTimeSetDao" >
+  <resultMap id="BaseResultMap" type="PlayTimeSetModel" >
+    <result column="publish_id" property="publishId" jdbcType="INTEGER" />
+    <result column="start_date" property="startDate" jdbcType="DATE" />
+    <result column="start_time" property="startTime" jdbcType="TIME" />
+    <result column="end_date" property="endDate" jdbcType="DATE" />
+    <result column="end_time" property="endTime" jdbcType="TIME" />
+    <result column="frequency" property="frequency" jdbcType="SMALLINT" />
+  </resultMap>
+
+  <!-- 批量添加 -->
+  <insert id="batchInsert" parameterType="PlayTimeSetModel" >
+    insert into fb_play_time_set (publish_id, start_date,
+      start_time, end_date, end_time,
+      frequency)
+    values
+    <foreach collection="list" item="item" separator=",">
+	    (#{item.publishId,jdbcType=INTEGER}, #{item.startDate,jdbcType=DATE},
+	      #{item.startTime,jdbcType=TIME}, #{item.endDate,jdbcType=DATE}, #{item.endTime,jdbcType=TIME},
+	      #{item.frequency,jdbcType=SMALLINT})
+    </foreach>
+  </insert>
+
+
+
+  <!-- 根据一个节目id与多个组id 删除时段设置 -->
+  <delete id="progDownForProgAfterDetele" parameterType="map">
+    delete from fb_play_time_set
+    where publish_id in (
+    	select publish_id from fb_program_publish_record where program_id = #{programId} and media_group_id in (
+	  	<foreach collection="mediaGroupIds" item="item" separator=",">
+	  		#{item}
+	  	</foreach>
+	  	)
+    )
+  </delete>
+
+  <!-- 根据一个组id与多个节目id 删除时段设置 -->
+   <delete id="progDownForGroupAfterDetele" parameterType="map">
+    delete from fb_play_time_set
+    where publish_id in (
+	  	<foreach collection="pubIds" item="item" separator=",">
+	  		#{item}
+	  	</foreach>
+    )
+  </delete>
+
+  <!-- 根据多个指定组id及时间段 查询定时连播类型中存在时间段有交叉的数据 一般同时段不允许2个定时连播的节目-->
+  <select id="selectConflictTime" parameterType="map" resultType="map" >
+	select * from (
+		SELECT
+			d.media_group_name as mediaGroupName,
+			e.program_name as programName,
+			b.time_mode as timeMode,
+			b.play_end_date as playEndDate,
+			b.play_start_date as playStartDate,
+			c.start_time as startTime,
+			c.end_time as endTime,
+			c.frequency
+		FROM
+			fb_program_publish_record b
+		LEFT JOIN fb_media_group d on b.media_group_id = d.media_group_id
+		LEFT JOIN fb_program e on b.program_id = e.program_id
+		LEFT JOIN fb_play_time_set c ON b.publish_id = c.publish_id
+		WHERE
+			(b.time_mode in (2,4) and b.media_group_id in (
+				<foreach collection="mediaGroupIds" item="item" separator=",">
+			  		#{item}
+			  	</foreach>
+			) AND b.play_start_date &lt; #{startDate} AND b.play_end_date &gt; #{endDate})
+		or (
+				b.time_mode in (2,4) and b.media_group_id in (
+				<foreach collection="mediaGroupIds" item="item" separator=",">
+			  		#{item}
+			  	</foreach>
+				) AND b.play_start_date BETWEEN #{startDate} AND #{endDate}
+			)
+		OR
+		 (
+			  b.time_mode in (2,4) and b.media_group_id in (
+			<foreach collection="mediaGroupIds" item="item" separator=",">
+			  		#{item}
+			  	</foreach>
+			) AND b.play_end_date BETWEEN #{startDate} AND #{endDate}
+		 )
+	) aa where (aa.startTime &lt;= #{startTime} and aa.endTime &gt;= #{endTime})
+				or (aa.startTime BETWEEN #{startTime} and #{endTime})
+				or (aa.endTime BETWEEN #{startTime} and #{endTime})
+  </select>
+
+
+
+</mapper>

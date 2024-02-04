@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.ProgramLayoutDao" >
+ <!-- <resultMap id="BaseResultMap" type="ProgramLayoutModel" >
+    <id column="program_id" property="programId" jdbcType="INTEGER" />
+    <id column="area_id" property="areaId" jdbcType="TINYINT" />
+    <result column="area_type" property="areaType" jdbcType="TINYINT" />
+    <result column="area_info" property="areaInfo" jdbcType="VARCHAR" />
+    <result column="layer" property="layer" jdbcType="TINYINT" />
+    <result column="x" property="x" jdbcType="DOUBLE" />
+    <result column="y" property="y" jdbcType="DOUBLE" />
+    <result column="width" property="width" jdbcType="DOUBLE" />
+    <result column="height" property="height" jdbcType="DOUBLE" />
+  </resultMap>-->
+
+<!--   批量新增布局信息 -->
+   <insert id="insertOfBatch" parameterType="java.util.List" >
+    insert into fb_program_layout (program_id, area_id, area_type,
+      area_info, layer, x,
+      y, width, height)
+    values
+    <foreach collection="list" item="item" index="index" separator="," >
+    (#{item.programId,jdbcType=INTEGER}, #{item.areaId,jdbcType=TINYINT}, #{item.areaType,jdbcType=TINYINT},
+      #{item.areaInfo,jdbcType=VARCHAR}, #{item.layer,jdbcType=TINYINT}, #{item.x,jdbcType=DOUBLE},
+      #{item.y,jdbcType=DOUBLE}, #{item.width,jdbcType=DOUBLE}, #{item.height,jdbcType=DOUBLE})
+     </foreach>
+  </insert>
+
+<!--   根据节目id删除信息 -->
+   <delete id="deleteByProgramId" parameterType="java.lang.Integer" >
+    delete from fb_program_layout
+    where program_id = #{programId,jdbcType=INTEGER}
+  </delete>
+  <select id="selectByProgramId" parameterType="java.lang.Integer" resultType="map">
+	SELECT
+		program_id as programId,
+		area_id AS areaId,
+		area_type AS areaType,
+		area_info AS areaInfo,
+		layer,
+		x,
+		y,
+		width,
+		height
+	FROM
+		fb_program_layout
+	WHERE
+		program_id = #{programId,jdbcType=INTEGER}
+	ORDER BY area_id ASC
+  </select>
+
+</mapper>

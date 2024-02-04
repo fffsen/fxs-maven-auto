@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.ProgramPublishRecordDao" >
+<!--  <resultMap id="BaseResultMap" type="ProgramPublishRecordModel" >
+    <id column="publish_id" property="publishId" jdbcType="INTEGER" />
+    <result column="program_id" property="programId" jdbcType="INTEGER" />
+    <result column="media_group_id" property="mediaGroupId" jdbcType="INTEGER" />
+    <result column="publisher_id" property="publisherId" jdbcType="INTEGER" />
+    <result column="publish_status" property="publishStatus" jdbcType="TINYINT" />
+    <result column="time_mode" property="timeMode" jdbcType="TINYINT" />
+    <result column="switch_mode" property="switchMode" jdbcType="TINYINT" />
+    <result column="download_mode" property="downloadMode" jdbcType="TINYINT" />
+    <result column="play_start_date" property="playStartDate" jdbcType="DATE" />
+    <result column="play_start_time" property="playStartTime" jdbcType="TIME" />
+    <result column="play_end_date" property="playEndDate" jdbcType="DATE" />
+    <result column="play_end_time" property="playEndTime" jdbcType="TIME" />
+    <result column="week_set" property="weekSet" jdbcType="VARCHAR" />
+    <result column="play_level" property="playLevel" jdbcType="TINYINT" />
+    <result column="frequency" property="frequency" jdbcType="INTEGER" />
+    <result column="program_order" property="programOrder" jdbcType="INTEGER" />
+    <result column="create_time" property="createTime" />
+  </resultMap>-->
+
+  <!--   查询终端组自己的节目  -->
+  <select id="selectProgramByGroupId" resultType="map" parameterType="map">
+	SELECT
+		b.program_name as programName,
+		b.program_id as programId,
+		b.total_play_time AS totalPlayTime,
+		b.audit_status AS auditStatus,
+		b.total_size AS totalSize,
+		b.program_width as programWidth,
+		b.program_height as programHeight,
+		a.play_start_date AS playStartDate,
+		a.play_end_date AS playEndDate,
+		a.play_start_time AS playStartTime,
+		a.play_end_time AS playEndTime,
+		a.week_set AS weekSet,
+		a.play_level AS playLevel,
+		a.program_order AS programOrder,
+		a.switch_mode AS switchMode,
+		a.time_mode AS timeMode,
+		a.publisher_id AS publisherId,
+		a.create_time as createTime,
+		c.user_name AS userName,
+		<!-- if(a.media_group_id = #{groupId},d.media_group_name,CONCAT('继承',d.media_group_name)) as mediaGroupName, -->
+		d.media_group_name as mediaGroupName,
+		a.media_group_id AS mediaGroupId,
+		a.publish_id AS publishId,
+		a.countTime,
+		a.unionTime,
+		publishStatus (
+				a.time_mode,
+				str_to_date(
+					concat(
+						a.play_start_date,
+						' ',
+						a.play_start_time
+					),
+					'%Y-%m-%d %H:%i:%s'
+				),
+				str_to_date(
+					concat(
+						a.play_end_date,
+						' ',
+						a.play_end_time
+					),
+					'%Y-%m-%d %H:%i:%s'
+				),
+				a.week_set
+			) as publishStatus
+	FROM (
+		select aa.*,count(e.publish_id) as countTime,GROUP_CONCAT(CONCAT(e.start_time,'#',e.end_time,'#',e.frequency)) as unionTime
+			from fb_program_publish_record aa LEFT JOIN fb_play_time_set e on aa.publish_id = e.publish_id
+		WHERE aa.media_group_id in (
+		<foreach collection="mediaGroupIds" item="mediaGroupId" separator=",">
+			#{mediaGroupId}
+		</foreach>
+		) GROUP BY aa.publish_id
+	) a
+	LEFT JOIN fb_program b ON a.program_id = b.program_id
+	LEFT JOIN fb_sys_user c on a.publisher_id=c.uid
+	LEFT JOIN fb_media_group d on a.media_group_id = d.media_group_id
+	ORDER BY a.program_order asc limit #{startRow},#{pageSize}
+  </select>
+
+  <!--   查询终端组自己的节目  -->
+  <select id="selectProgramByGroupIdCount" resultType="java.lang.String" parameterType="map">
+	SELECT
+		count(*)
+	FROM
+		fb_program_publish_record a
+	LEFT JOIN fb_program b ON a.program_id = b.program_id
+	LEFT JOIN fb_sys_user c on a.publisher_id=c.uid
+	LEFT JOIN fb_media_group d on a.media_group_id = d.media_group_id
+	WHERE
+		a.media_group_id in (
+		<foreach collection="mediaGroupIds" item="mediaGroupId" separator=",">
+			#{mediaGroupId}
+		</foreach>
+		)
+  </select>
+
+  <!-- 查询终端组的节目 不包括继承的节目 -->
+  <select id="selectGroupProg" parameterType="java.lang.Integer" resultType="ProgramPublishRecordModel">
+  	SELECT
+  		a.publish_id as publishId,
+		a.program_id as programId,
+		a.time_mode AS timeMode,
+		a.switch_mode AS switchMode,
+		a.download_mode AS downloadMode,
+		a.program_order AS programOrder,
+		a.play_start_date AS playStartDate,
+		a.play_start_time AS playStartTime,
+		a.play_end_date AS playEndDate,
+		a.play_end_time AS playEndTime,
+		a.week_set AS weekSet,
+		a.play_level AS playLevel,
+		a.frequency,
+		a.create_time as createTime
+	FROM
+		fb_program_publish_record a
+	where a.media_group_id =#{mediaGroupId} ORDER BY a.program_order asc
+  </select>
+
+   <!--   批量添加 -->
+   <insert id="batchInsert" parameterType="ProgramPublishRecordModel" useGeneratedKeys="true" keyProperty="publishId">
+    insert into fb_program_publish_record (program_id, media_group_id,
+      publisher_id, publish_status, time_mode,
+      switch_mode, download_mode, play_start_date,
+      play_start_time, play_end_date, play_end_time,
+      week_set, play_level, frequency,
+      program_order,create_time)
+    values
+    <foreach collection="list" item="item" separator=",">
+	    (#{item.programId,jdbcType=INTEGER}, #{item.mediaGroupId,jdbcType=INTEGER},
+	      #{item.publisherId,jdbcType=INTEGER}, #{item.publishStatus,jdbcType=TINYINT}, #{item.timeMode,jdbcType=TINYINT},
+	      #{item.switchMode,jdbcType=TINYINT}, #{item.downloadMode,jdbcType=TINYINT}, #{item.playStartDate,jdbcType=DATE},
+	      #{item.playStartTime,jdbcType=TIME}, #{item.playEndDate,jdbcType=DATE}, #{item.playEndTime,jdbcType=TIME},
+	      #{item.weekSet,jdbcType=VARCHAR}, #{item.playLevel,jdbcType=TINYINT}, #{item.frequency,jdbcType=INTEGER},
+	      #{item.programOrder,jdbcType=INTEGER},#{item.createTime})
+    </foreach>
+
+  </insert>
+  <!-- 根据节目id查询发布到的终端组 -->
+  <select id="selectGroupByProg" parameterType="map" resultType="map">
+	 SELECT
+		a.publish_id as publishId,
+		a.media_group_id AS mediaGroupId,
+	    b.media_group_name AS mediaGroupName,
+		a.publisher_id AS publisherId,
+		c.user_name AS publisher,
+		a.play_start_date AS playStartDate,
+		a.play_start_time AS playStartTime,
+		a.play_end_date AS playEndDate,
+		a.play_end_time AS playEndTime,
+		a.play_level as playLevel,
+		publishStatus (
+			a.time_mode,
+			str_to_date(
+				concat(
+					a.play_start_date,
+					' ',
+					a.play_start_time
+				),
+				'%Y-%m-%d %H:%i:%s'
+			),
+			str_to_date(
+				concat(
+					a.play_end_date,
+					' ',
+					a.play_end_time
+				),
+				'%Y-%m-%d %H:%i:%s'
+			),
+			a.week_set
+		) as publishStatus
+	FROM
+		fb_program_publish_record a
+	LEFT JOIN fb_media_group b ON a.media_group_id = b.media_group_id
+	LEFT JOIN fb_sys_user c ON a.publisher_id = c.uid
+  <where>
+	  program_id = #{programId}
+	  <if test="groupName != null and groupName != '' ">
+		  and b.media_group_name like concat("%",#{groupName},"%")
+	  </if>
+	  limit #{startRow},#{pageSize}
+  </where>
+  </select>
+  <!-- 根据节目id查询发布到的终端组 -->
+  <select id="selectGroupByProg2" parameterType="map" resultType="map">
+	 SELECT
+		a.publish_id as publishId,
+		a.media_group_id AS mediaGroupId,
+	    b.media_group_name AS mediaGroupName,
+		a.publisher_id AS publisherId,
+		c.user_name AS publisher,
+		a.play_start_date AS playStartDate,
+		a.play_start_time AS playStartTime,
+		a.play_end_date AS playEndDate,
+		a.play_end_time AS playEndTime,
+		a.play_level as playLevel,
+		publishStatus (
+			a.time_mode,
+			str_to_date(
+				concat(
+					a.play_start_date,
+					' ',
+					a.play_start_time
+				),
+				'%Y-%m-%d %H:%i:%s'
+			),
+			str_to_date(
+				concat(
+					a.play_end_date,
+					' ',
+					a.play_end_time
+				),
+				'%Y-%m-%d %H:%i:%s'
+			),
+			a.week_set
+		) as publishStatus
+	FROM
+		fb_program_publish_record a
+	LEFT JOIN fb_media_group b ON a.media_group_id = b.media_group_id
+	LEFT JOIN fb_sys_user c ON a.publisher_id = c.uid
+	WHERE
+		program_id = #{programId}
+  </select>
+  <select id="selectGroupByProgCount" parameterType="map" resultType="java.lang.Integer">
+	 SELECT
+		count(*)
+	FROM
+		fb_program_publish_record a
+	LEFT JOIN fb_media_group b ON a.media_group_id = b.media_group_id
+	LEFT JOIN fb_sys_user c ON a.publisher_id = c.uid
+	  <where>
+		  program_id = #{programId}
+		  <if test="groupName != null and groupName != '' ">
+			  and b.media_group_name like concat("%",#{groupName},"%")
+		  </if>
+	  </where>
+  </select>
+
+  <!--  一个节目在多个终端组上下刊 -->
+  <delete id="progDownForProg" parameterType="map">
+  	delete from fb_program_publish_record
+  	where program_id = #{programId} and media_group_id in (
+  	<foreach collection="mediaGroupIds" item="item" separator=",">
+  		#{item}
+  	</foreach>
+  	)
+  </delete>
+
+  <!--  在一个终端组上下刊多个节目 -->
+  <delete id="progDownForGroup" parameterType="map">
+  	delete from fb_program_publish_record
+  	where media_group_id = #{mediaGroupId} and publish_id in (
+  	<foreach collection="pubIds" item="item" separator=",">
+  		#{item}
+  	</foreach>
+  	)
+  </delete>
+
+ <!--   根据分组id删除组的所有节目 -->
+  <delete id="deleteByGroupIds" >
+  	delete from fb_program_publish_record where media_group_id in (
+  	<foreach collection="array" separator="," item="item">
+  		#{item}
+  	</foreach>
+  	)
+  </delete>
+
+ <!--   根据素材id查询发布到的终端组 -->
+  <select id="selectRecordByMaterialId" resultType="map">
+  	SELECT
+		publish_id AS publishId,
+		program_id AS programId,
+		media_group_id AS mediaGroupId
+	FROM
+		fb_program_publish_record
+	WHERE
+		program_id IN (
+			SELECT
+				program_id
+			FROM
+				fb_program_material_relation
+			WHERE
+				material_id in (
+				<foreach collection="array" item="item" separator=",">
+					#{item}
+				</foreach>
+				)
+		)
+  </select>
+  <!--   查询素材是否被发布 -->
+  <select id="selectPublishByMaterialId"  resultType="map">
+  	SELECT
+		a.material_id as materialId,
+		a.material_name AS materialName,
+		b.program_id AS programId,
+		c.publish_id AS publishId,
+		c.media_group_id AS mediaGroupId,
+		GROUP_CONCAT(c.publish_id) as publishIds
+	FROM
+		program_material a
+	LEFT JOIN fb_program_material_relation b ON a.material_id = b.material_id
+	LEFT JOIN fb_program_publish_record c ON b.program_id = c.program_id
+	WHERE a.material_id in (
+		<foreach collection="array" item="item" separator=",">
+			#{item}
+		</foreach>
+	) GROUP BY a.material_id
+  </select>
+  <!-- 更新节目排序 -->
+  <update id="updateProgramOrderByKey" parameterType="ProgramPublishRecordModel" >
+    update fb_program_publish_record set program_order=#{programOrder} where publish_id = #{publishId,jdbcType=INTEGER}
+  </update>
+
+  <!-- 根据多个组id查询其中一轮节目最大的播放总时长 -->
+  <select id="selectMaxPlayTime"  resultType="map">
+  	SELECT
+  		aa.media_group_id AS mediaGroupId,
+		aa.media_group_name as mediaGroupName,
+		if(aa.totalPlayTime is null,0,aa.totalPlayTime) AS maxPlayTime
+		<!-- #max(aa.totalPlayTime) AS maxPlayTime -->
+	FROM
+		(
+			SELECT
+				c.media_group_id,
+				c.media_group_name,
+				sum(b.total_play_time) AS totalPlayTime
+			FROM
+				fb_media_group c LEFT JOIN fb_program_publish_record a on a.media_group_id=c.media_group_id
+			LEFT JOIN fb_program b ON a.program_id = b.program_id
+			WHERE
+				c.media_group_id IN (
+					<foreach collection="array" item="item" separator=",">
+						#{item}
+					</foreach>
+				)
+			GROUP BY c.media_group_id
+		) aa order by aa.totalPlayTime desc limit 0,1
+  </select>
+
+  <!--  统计指定终端组的节目的最大序号 -->
+  <select id="selectGroupMaxNum" resultType="map" >
+  	SELECT
+		media_group_id AS mediaGroupId,
+		max(program_order) AS maxNum
+	FROM
+		fb_program_publish_record
+	WHERE
+		media_group_id IN (
+		<foreach collection="list" item="item" separator=",">
+			#{item}
+		</foreach>
+		) GROUP BY media_group_id
+  </select>
+
+
+  <!-- 验证终端分组中是否已存在优先播放的节目 -->
+  <select id="checkFirstProgByMediaGroupId" resultType="map" >
+  	SELECT
+		a.media_group_id as mediaGroupId,
+		b.media_group_name AS mediaGroupName,
+		a.publish_id AS publishId,
+		a.program_id AS programId
+	FROM
+		fb_program_publish_record a
+	LEFT JOIN fb_media_group b ON a.media_group_id = b.media_group_id
+	WHERE
+		a.media_group_id IN (
+			<foreach collection="array" item="item" separator=",">
+				#{item}
+			</foreach>
+		) AND play_level = 2 GROUP BY a.media_group_id
+  </select>
+  <!-- 变更组的节目 -->
+  <update id="updateGroupProgByGroupId" parameterType="map">
+    update fb_program_publish_record set media_group_id=#{newMediaGroupId} where media_group_id = #{oldMediaGroupId,jdbcType=INTEGER}
+  </update>
+
+
+</mapper>

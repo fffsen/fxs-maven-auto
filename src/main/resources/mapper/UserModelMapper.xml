@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.UserDao" >
+ <!-- <resultMap id="BaseResultMap" type="UserModel" >
+    <id column="uid" property="uid" jdbcType="INTEGER" />
+    <result column="user_name" property="userName" jdbcType="VARCHAR" />
+    <result column="password" property="password" jdbcType="VARCHAR" />
+    <result column="real_name" property="realName" jdbcType="VARCHAR" />
+    <result column="email" property="email" jdbcType="VARCHAR" />
+    <result column="user_mobphone" property="userMobphone" jdbcType="VARCHAR" />
+    <result column="reg_time" property="regTime" jdbcType="TIMESTAMP" />
+    <result column="u_pic" property="uPic" jdbcType="VARCHAR" />
+    <result column="last_time" property="lastTime" jdbcType="TIMESTAMP" />
+    <result column="user_status" property="userStatus" jdbcType="TINYINT" />
+    <result column="department_id" property="departmentId" jdbcType="INTEGER" />
+    <result column="info" property="info" jdbcType="VARCHAR" />
+    <result column="is_delete" property="isDelete" />
+    <result column="u_group_id" property="uGroupId" />
+  </resultMap>-->
+ <!--  分页查询   后台管理员信息-->
+  <select id="selectPage" parameterType="map" resultType="map">
+	   SELECT
+			a.uid,
+			a.user_name AS userName,
+			a.user_status AS userStatus,
+			a.real_name AS realName,
+			b.role_id AS roleId,
+			c.role_name AS roleName,
+			a.department_id AS departmentId,
+			d.attribute_name AS departmentName,
+			a.user_mobphone AS userMobphone,
+			a.last_time AS lastTime,
+			a.u_group_id as uGroupId,
+			aa.user_group_name as userGroupName
+		FROM
+			fb_sys_user a
+		LEFT JOIN fb_sys_user_group aa ON a.u_group_id = aa.u_group_id
+		LEFT JOIN pr_user_roles b ON a.uid = b.uid
+		LEFT JOIN pr_roles c ON b.role_id = c.role_id
+		LEFT JOIN fb_attribute_dictionary d ON a.department_id = d.dictionary_id
+		<where>
+			a.is_delete = 1 and a.u_group_id > 0
+			<if test="userName != null and userName != '' ">
+			  and a.user_name LIKE concat('%',#{userName},'%')
+			</if>
+			<if test="realName != null and realName != '' ">
+			  and a.real_name LIKE concat('%',#{realName},'%')
+			</if>
+			<if test="userMobphone != null and userMobphone != '' ">
+			  and a.user_mobphone LIKE concat('%',#{userMobphone},'%')
+			</if>
+			<if test="uGroupId != null and uGroupId > 0 ">
+			  and a.u_group_id = #{uGroupId}
+			</if>
+		</where>
+		order by a.uid desc limit #{startRow},#{pageSize}
+  </select>
+  <!--   分页查询 查总数  后台管理员信息-->
+  <select id="selectPageCount" parameterType="map" resultType="java.lang.Integer">
+	   SELECT
+			count(a.uid)
+		FROM
+			fb_sys_user a
+		LEFT JOIN fb_sys_user_group aa ON a.u_group_id = aa.u_group_id
+		LEFT JOIN pr_user_roles b ON a.uid = b.uid
+		LEFT JOIN pr_roles c ON b.role_id = c.role_id
+		LEFT JOIN fb_attribute_dictionary d ON a.department_id = d.dictionary_id
+		<where>
+			a.is_delete = 1 and a.u_group_id > 0
+			<if test="userName != null and userName != '' ">
+			  and a.user_name LIKE concat('%',#{userName},'%')
+			</if>
+			<if test="realName != null and realName != '' ">
+			  and a.real_name LIKE concat('%',#{realName},'%')
+			</if>
+			<if test="userMobphone != null and userMobphone != '' ">
+			  and a.user_mobphone LIKE concat('%',#{userMobphone},'%')
+			</if>
+			<if test="uGroupId != null and uGroupId > 0 ">
+			  and a.u_group_id = #{uGroupId}
+			</if>
+		</where>
+  </select>
+  <!--   新加系统用户 -->
+  <insert id="insert" parameterType="UserModel" useGeneratedKeys="true" keyProperty="uid">
+    insert into fb_sys_user (user_name,
+      password, real_name,
+      email,
+      user_mobphone, reg_time,
+      u_pic,last_time,
+      user_status, department_id, info,u_group_id,is_sync_user_group
+      )
+    values (#{userName,jdbcType=VARCHAR},
+      #{password,jdbcType=VARCHAR}, #{realName,jdbcType=VARCHAR},
+      #{email,jdbcType=VARCHAR},
+      #{userMobphone,jdbcType=VARCHAR}, #{regTime,jdbcType=TIMESTAMP},
+      #{uPic,jdbcType=VARCHAR},
+      #{lastTime,jdbcType=TIMESTAMP},
+      #{userStatus,jdbcType=TINYINT}, #{departmentId,jdbcType=INTEGER}, #{info,jdbcType=VARCHAR},#{uGroupId},#{isSyncUserGroup}
+      )
+  </insert>
+  <!--   根据id查询详细信息 -->
+  <select id="selectByPrimaryKey" resultType="map" parameterType="java.lang.Integer" >
+	   SELECT
+			a.uid,
+			user_name AS userName,
+			real_name AS realName,
+			email,
+			user_mobphone AS userMobphone,
+			reg_time AS regTime,
+			u_pic AS uPic,
+			last_time AS lastTime,
+			a.open_id as openId,
+			b.role_id AS roleId,
+			user_status AS userStatus,
+			department_id AS departmentId,
+			a.info,
+			u_group_id as uGroupId,
+			is_sync_user_group AS isSyncUserGroup,
+			c.role_name as roleName,
+			d.attribute_name as departmentName
+		FROM
+				fb_sys_user a
+			LEFT JOIN pr_user_roles b ON a.uid = b.uid
+			LEFT JOIN pr_roles c ON b.role_id = c.role_id
+			LEFT JOIN fb_attribute_dictionary d ON a.department_id = d.dictionary_id
+			AND d.attribute_type = 1
+		where a.uid = #{uid,jdbcType=INTEGER}
+  </select>
+  <!--   根据用户名查询 -->
+  <select id="selectByUserName" resultType="map" parameterType="map" >
+	   SELECT
+			uid,
+			user_name AS userName,
+			real_name AS realName,
+			email,
+			user_mobphone AS userMobphone,
+			reg_time AS regTime,
+			u_pic AS uPic,
+			last_time AS lastTime,
+			user_status AS userStatus,
+			department_id AS departmentId,
+			info
+		FROM
+			fb_sys_user
+		<where>
+			user_name = #{userName} and is_delete = 1
+			<if test="uid != null and uid > 0">
+				and uid != #{uid}
+			</if>
+		</where>
+  </select>
+
+  <select id="selectByOpenId" resultType="map" parameterType="java.lang.String" >
+	   SELECT
+			uid,
+			user_name AS userName,
+			real_name AS realName,
+			email,
+			user_mobphone AS userMobphone,
+			reg_time AS regTime,
+			u_pic AS uPic,
+			last_time AS lastTime,
+			user_status AS userStatus,
+			department_id AS departmentId,
+			info,
+			u_group_id as uGroupId
+		FROM
+			fb_sys_user
+		<where>
+			open_id = #{openId} and is_delete = 1
+		</where>
+  </select>
+  <!-- 查询超级管理员信息 -->
+  <select id="selectByCondition" resultType="map" parameterType="map" >
+	   SELECT
+			uid,
+			user_name AS userName,
+			real_name AS realName,
+			email,
+			user_mobphone AS userMobphone,
+			reg_time AS regTime,
+			u_pic AS uPic,
+			last_time AS lastTime,
+			user_status AS userStatus,
+			department_id AS departmentId,
+			info,
+			u_group_id as uGroupId,
+			is_sync_user_group as isSyncUserGroup,
+			open_id as openId,
+			warn_notice as warnNotice
+		FROM
+			fb_sys_user
+		<where>
+			is_delete = 1
+			<if test="uGroupId != null">
+				and u_group_id = #{uGroupId}
+			</if>
+			<if test="warnNotice != null">
+				and warn_notice = #{warnNotice}
+			</if>
+		</where>
+  </select>
+
+  <!--   根据id修改信息 -->
+   <update id="updateByPrimaryKey" parameterType="UserModel" >
+    update fb_sys_user
+    set
+    <if test="userName != null and userName != '' ">
+    	user_name = #{userName,jdbcType=VARCHAR},
+    </if>
+    <if test="uGroupId != null and uGroupId > 0 ">
+    	u_group_id = #{uGroupId},
+    </if>
+    <if test="isSyncUserGroup != null and isSyncUserGroup == 1">
+    	is_sync_user_group = #{isSyncUserGroup},
+    </if>
+      real_name = #{realName,jdbcType=VARCHAR},
+      email = #{email,jdbcType=VARCHAR},
+      user_mobphone = #{userMobphone,jdbcType=VARCHAR},
+      department_id = #{departmentId,jdbcType=INTEGER},
+      info = #{info,jdbcType=VARCHAR}
+    where uid = #{uid,jdbcType=INTEGER}
+  </update>
+  <!--   修改密码 -->
+  <update id="updatePwd" parameterType="map" >
+    update fb_sys_user
+    set
+      password = #{password,jdbcType=VARCHAR}
+    where uid = #{uid,jdbcType=INTEGER}
+  </update>
+  <!--   修改登录状态 -->
+  <update id="updateStatus" parameterType="map" >
+    update fb_sys_user
+    set
+      <if test="lastTime != null" >
+        last_time = #{lastTime,jdbcType=TIMESTAMP},
+      </if>
+      user_status = #{userStatus,jdbcType=TINYINT}
+    where uid = #{uid,jdbcType=INTEGER}
+  </update>
+  <!--   逻辑删除用户 -->
+  <update id="updateIsDelete" parameterType="map" >
+    update fb_sys_user
+    set
+      is_delete = #{isDelete,jdbcType=TINYINT}
+    where uid in (
+    <foreach collection="uids" item="item" separator=",">
+    	#{item}
+    </foreach>
+    )
+  </update>
+  <!--   修改用户的自动同步状态 -->
+  <update id="updateSync" parameterType="map" >
+    update fb_sys_user
+    set is_sync_user_group = #{isSyncUserGroup}
+    where uid = #{uid,jdbcType=INTEGER}
+  </update>
+  <!-- 修改用户预警通知状态 -->
+  <update id="updateWarnNotice" parameterType="map" >
+    update fb_sys_user
+    set warn_notice = #{warnNotice}
+    where uid = #{uid,jdbcType=INTEGER}
+  </update>
+
+  <select id="selectUserAndPwd" resultType="map" parameterType="map" >
+    select user_mobphone as userMobphone,uid,user_name AS userName,u_group_id as uGroupId,warn_notice as warnNotice
+    from fb_sys_user
+    where user_name = #{userName} and password=#{password} and is_delete = 1
+  </select>
+  <!-- 根据用户id 查询与用户同用户组的用户信息 -->
+  <select id="selectUsersByUgroupId" resultType="java.lang.String" parameterType="java.lang.Integer" >
+  	select GROUP_CONCAT(uid) as sameGroupUserId from fb_sys_user
+  	where u_group_id = (select u_group_id from fb_sys_user where uid= #{uid})
+  </select>
+  <select id="selectAdmin" resultType="java.lang.String" parameterType="java.lang.Integer" >
+  	select GROUP_CONCAT(uid) as sameGroupUserId from fb_sys_user
+  	where u_group_id = #{uGroupId}
+  </select>
+
+  <select id="selectUidAndPwd" resultType="map" parameterType="map" >
+    select user_mobphone as userMobphone,uid,user_name AS userName,u_group_id as uGroupId
+    from fb_sys_user
+    where uid = #{uid} and password=#{password} and is_delete = 1
+  </select>
+
+  <!--   查询用户组的同步用户 -->
+  <select id="selectSyncUser" resultType="map" parameterType="map" >
+    select user_mobphone as userMobphone,uid,user_name AS userName,u_group_id as uGroupId
+    from fb_sys_user
+    where u_group_id = #{uGroupId} and is_sync_user_group = #{isSyncUserGroup} and is_delete = 1
+  </select>
+
+  <select id="selectPwdByUid" resultType="map" parameterType="map" >
+    select uid,user_name AS userName,u_group_id as uGroupId,password
+    from fb_sys_user
+    where uid = #{uid} and is_delete = 1
+  </select>
+
+</mapper>

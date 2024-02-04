@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.SysUserNotifyDao" >
+<!--  <resultMap id="BaseResultMap" type="SysUserNotifyModel" >
+    <id column="notify_id" property="notifyId" jdbcType="BIGINT" />
+    <result column="info" property="info" jdbcType="VARCHAR" />
+    <result column="receiver_id" property="receiverId" jdbcType="INTEGER" />
+    <result column="notify_type" property="notifyType" jdbcType="TINYINT" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="read_status" property="readStatus" jdbcType="TINYINT" />
+  </resultMap>-->
+  <!-- 根据用户分页查询通知 倒序 -->
+  <select id="selectPage" resultType="map" parameterType="map">
+  	SELECT
+		a.notify_id AS notifyId,
+		a.info,
+		a.receiver_id AS receiverId,
+		b.user_name AS receiver,
+		a.notify_type AS notifyType,
+		a.create_time AS createTime,
+		a.read_status AS readStatus
+	FROM
+		fb_sys_user_notify a
+	LEFT JOIN fb_sys_user b ON a.receiver_id = b.uid
+	<where>
+		a.receiver_id = #{receiverId}
+		<if test="readStatus != null">
+			and a.read_status = #{readStatus}
+		</if>
+		<if test="notifyType != null">
+			and a.notify_type = #{notifyType}
+		</if>
+		<if test="info != null and info !=''">
+			and a.info like concat('%',#{info},'%')
+		</if>
+	</where>
+	ORDER BY a.create_time DESC LIMIT #{startRow},#{pageSize}
+  </select>
+  <select id="selectPageCount" resultType="java.lang.Integer" parameterType="map">
+  	SELECT
+		count(a.notify_id)
+	FROM
+		fb_sys_user_notify a
+	LEFT JOIN fb_sys_user b ON a.receiver_id = b.uid
+	<where>
+		a.receiver_id = #{receiverId}
+		<if test="readStatus != null">
+			and a.read_status = #{readStatus}
+		</if>
+		<if test="notifyType != null">
+			and a.notify_type = #{notifyType}
+		</if>
+		<if test="info != null and info !=''">
+			and a.info like concat('%',#{info},'%')
+		</if>
+	</where>
+  </select>
+
+  <!-- 批量修改读取状态 -->
+  <update id="updateReadStatusByKeys" parameterType="map" >
+    update fb_sys_user_notify set read_status = #{readStatus,jdbcType=TINYINT}
+    <where>
+    	receiver_id = #{receiverId}
+    	<if test="notifyIds != null">
+    		and notify_id in (
+			    <foreach collection="notifyIds" item="item" separator="," >
+			    	#{item}
+			    </foreach>
+		    )
+    	</if>
+    </where>
+  </update>
+
+  <!-- 批量删除 -->
+  <delete id="deleteByKeys" parameterType="map" >
+    delete from fb_sys_user_notify
+     <where>
+    	receiver_id = #{receiverId}
+    	<if test="notifyIds != null">
+    		and notify_id in (
+			    <foreach collection="notifyIds" item="item" separator="," >
+			    	#{item}
+			    </foreach>
+		    )
+    	</if>
+    </where>
+  </delete>
+  <!-- 批量添加 -->
+  <insert id="batchInsert" parameterType="SysUserNotifyModel" >
+    insert into fb_sys_user_notify (info, Receiver_id,
+      notify_type, create_time, read_status
+      )
+    values
+    <foreach collection="list" item="item" separator=",">
+    	(#{item.info,jdbcType=VARCHAR}, #{item.receiverId,jdbcType=INTEGER},
+      #{item.notifyType,jdbcType=TINYINT}, #{item.createTime,jdbcType=TIMESTAMP}, #{item.readStatus,jdbcType=TINYINT}
+      )
+    </foreach>
+  </insert>
+
+
+</mapper>

@@ -1,0 +1,60 @@
+version: '3'
+networks:
+  net_xf:
+    driver: bridge
+
+services:
+  mysql:
+    image: mysql:5.7
+    restart: always
+    container_name: xinfa_mysql
+    network_mode: xf_net
+    volumes:
+      - /home/docker_xf/mysql5.7/mysqldata:/var/lib/mysql
+    environment:
+      - "MYSQL_ROOT_PASSWORD=mysql1234"
+      - "MYSQL_DATABASE=zycm_advert_publish"
+      - "TZ=Asia/Shanghai"
+    ports:
+      - 3406:3306
+
+  redis:
+    image: redis:6.2.5
+    restart: always
+    container_name: xinfa_redis
+    network_mode: xf_net
+    ports:
+      - 6579:6379
+    volumes:
+      - /home/docker_xf/redis6.2.5/redisdata:/data
+    command: redis-server --port 6379 --requirepass redis1234 --appendonly yes --protected-mode no
+
+  amq:
+    image: registry.cn-hangzhou.aliyuncs.com/zycmjsb/xinfa_mq:230807_4.0
+    restart: always
+    container_name: xinfa_mq
+    ports:
+      - 61616:61615
+      - 1884:1883
+      - 8162:8161
+    network_mode: xf_net
+
+  ftp_tomcat:
+    image: registry.cn-hangzhou.aliyuncs.com/zycmjsb/xinfa_ftp:230807_4.0
+    restart: always
+    container_name: xinfa_ftp
+    ports:
+      #http接口
+      - 9081:8080
+      #ftp的通信接口
+      - 2222:2222
+      #ftp的数据接口
+      - 2223-2225:2223-2225
+    volumes:
+      - /home/docker_xf/ftp/webapps/ftpData/:/usr/local/tomcat/ftpData/
+    network_mode: xf_net
+    depends_on:
+      - mysql
+      - redis
+
+

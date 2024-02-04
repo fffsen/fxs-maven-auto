@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.SysUserGroupDao" >
+<!--  <resultMap id="BaseResultMap" type="SysUserGroupModel" >
+    <id column="u_group_id" property="uGroupId" jdbcType="INTEGER" />
+    <result column="user_group_name" property="userGroupName" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+  </resultMap>-->
+
+  <!-- 分页查询用户组 -->
+  <select id="selectPage" resultType="map" parameterType="map" >
+    select u_group_id as uGroupId, user_group_name AS userGroupName, create_time AS createTime
+    from fb_sys_user_group
+    <where>
+    	u_group_id > 0
+    	<if test="userGroupName != null and userGroupName != '' ">
+    		and user_group_name like concat('%',#{userGroupName},'%')
+    	</if>
+    	<if test="uGroupId != null and uGroupId > 0 ">
+    		and u_group_id = #{uGroupId}
+    	</if>
+    </where>
+    order by u_group_id desc limit #{startRow},#{pageSize}
+  </select>
+  <select id="selectPageCount" resultType="java.lang.Integer" parameterType="map" >
+    select count(u_group_id)
+    from fb_sys_user_group
+    <where>
+    	u_group_id > 0
+    	<if test="userGroupName != null and userGroupName != '' ">
+    		and user_group_name like concat('%',#{userGroupName},'%')
+    	</if>
+    	<if test="uGroupId != null and uGroupId > 0 ">
+    		and u_group_id = #{uGroupId}
+    	</if>
+    </where>
+  </select>
+
+  <select id="selectList" resultType="map" parameterType="map" >
+    select u_group_id as uGroupId, user_group_name AS userGroupName, create_time AS createTime
+    from fb_sys_user_group
+    <where>
+    	u_group_id > 0
+    	<if test="userGroupName != null and userGroupName != '' ">
+    		and user_group_name like concat('%',#{userGroupName},'%')
+    	</if>
+    	<if test="uGroupId != null and uGroupId > 0 ">
+    		and u_group_id = #{uGroupId}
+    	</if>
+    </where>
+    order by u_group_id desc
+  </select>
+
+  <!-- 根据用户组id查询 -->
+  <!-- <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select
+    <include refid="Base_Column_List" />
+    from fb_sys_user_group
+    where u_group_id = #{uGroupId,jdbcType=INTEGER}
+  </select> -->
+
+  <!--  新增用户组 -->
+  <insert id="insert" parameterType="SysUserGroupModel" useGeneratedKeys="true" keyProperty="uGroupId">
+    insert into fb_sys_user_group (u_group_id, user_group_name, create_time
+      )
+    values (#{uGroupId,jdbcType=INTEGER}, #{userGroupName,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}
+      )
+  </insert>
+
+  <!-- 删除用户组 -->
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from fb_sys_user_group
+    where u_group_id = #{uGroupId,jdbcType=INTEGER}
+  </delete>
+
+  <!--  修改用户组名 -->
+  <update id="updateGroupName" parameterType="SysUserGroupModel" >
+    update fb_sys_user_group
+    set user_group_name = #{userGroupName,jdbcType=VARCHAR}
+    where u_group_id = #{uGroupId,jdbcType=INTEGER}
+  </update>
+
+  <!--   验证用户组名称重复 -->
+  <select id="validName" parameterType="map" resultType="map">
+		select u_group_id as uGroupId, user_group_name AS userGroupName, create_time AS createTime
+	    from fb_sys_user_group
+	    <where>
+	    	user_group_name = #{userGroupName}
+	    	<if test="uGroupId != null and uGroupId > 0 ">
+	    		and u_group_id != #{uGroupId}
+	    	</if>
+    	</where>
+  </select>
+
+</mapper>

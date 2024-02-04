@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.zycm.zybao.dao.MediaRunLogDao" >
+ <!-- <resultMap id="BaseResultMap" type="MediaRunLogModel" >
+    <id column="run_log_id" property="runLogId" jdbcType="INTEGER" />
+    <result column="mid" property="mid" jdbcType="INTEGER" />
+    <result column="machine_code" property="machineCode" />
+    <result column="log_time" property="logTime" jdbcType="TIMESTAMP" />
+    <result column="log_info" property="logInfo" jdbcType="VARCHAR" />
+    <result column="log_level" property="logLevel" jdbcType="TINYINT" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+  </resultMap>-->
+
+   <!-- 分页查询  根据终端id查询运行日志信息 -->
+  <select id="selectPage" parameterType="map" resultType="map">
+  	SELECT
+		a.run_log_id AS runLogId,
+		a.create_time AS logTime,
+		a.log_info AS logInfo,
+		a.log_level AS logLevel,
+		a.mid,
+		b.client_number AS clientNumber
+	FROM
+		fb_media_run_log a
+	LEFT JOIN fb_media_attribute b ON a.machine_code = b.machine_code
+	<where>
+		<if test="machineCode !=null and machineCode != ''">
+			and a.machine_code = #{machineCode}
+		</if>
+		<if test="startTime !=null and endTime != null">
+			and log_time BETWEEN #{startTime} and #{endTime}
+		</if>
+		<if test="logType != null">
+			<!-- 统计离线 -->
+			<if test="logType == 1">
+				and log_level = 1 and log_info like concat('%','终端离线','%')
+			</if>
+			<!-- 统计led更新失败 -->
+			<if test="logType == 2">
+				and log_level = 21
+			</if>
+			<!-- 统计下载 -->
+			<if test="logType == 3">
+				and log_level = 1 and log_info like concat('%','下载','%')
+			</if>
+			<!-- 统计异常日志 -->
+			<if test="logType == 4">
+				and (log_level in (2,3,21) or log_info like concat('%','下载失败','%'))
+			</if>
+		</if>
+	</where>
+	ORDER BY a.create_time desc limit #{startRow},#{pageSize}
+  </select>
+
+  <!--   绑定分页查询  查询总数 -->
+  <select id="selectPageCount" parameterType="map" resultType="java.lang.Integer">
+  	SELECT
+		count(a.run_log_id)
+	FROM
+		fb_media_run_log a
+	LEFT JOIN fb_media_attribute b ON a.machine_code = b.machine_code
+	<where>
+		<if test="machineCode !=null and machineCode != ''">
+			and a.machine_code = #{machineCode}
+		</if>
+		<if test="startTime !=null and endTime != null">
+			and log_time BETWEEN #{startTime} and #{endTime}
+		</if>
+		<if test="logType != null">
+			<!-- 统计离线 -->
+			<if test="logType == 1">
+				and log_level = 1 and log_info like concat('%','终端离线','%')
+			</if>
+			<!-- 统计led更新失败 -->
+			<if test="logType == 2">
+				and log_level = 21
+			</if>
+			<!-- 统计下载 -->
+			<if test="logType == 3">
+				and log_level = 1 and log_info like concat('%','下载','%')
+			</if>
+			<!-- 统计异常日志 -->
+			<if test="logType == 4">
+				and (log_level in (2,3,21) or log_info like concat('%','下载失败','%'))
+			</if>
+		</if>
+	</where>
+  </select>
+  <!--   批量增加 -->
+   <insert id="batchInsert" parameterType="MediaRunLogModel" useGeneratedKeys="true" keyProperty="runLogId">
+    insert into fb_media_run_log (mid,machine_code, log_time,
+      log_info, log_level, create_time
+      )
+    values
+    <foreach collection="list" item="item" separator=",">
+	    (#{item.mid,jdbcType=INTEGER},#{item.machineCode}, #{item.logTime,jdbcType=TIMESTAMP},
+	      #{item.logInfo,jdbcType=VARCHAR}, #{item.logLevel,jdbcType=TINYINT}, #{item.createTime,jdbcType=TIMESTAMP}
+	      )
+    </foreach>
+  </insert>
+  <!--   单个增加 -->
+   <insert id="insert" parameterType="MediaRunLogModel" useGeneratedKeys="true" keyProperty="runLogId">
+    insert into fb_media_run_log (mid,machine_code, log_time,
+      log_info, log_level, create_time
+      )
+    values (#{mid,jdbcType=INTEGER},#{machineCode}, #{logTime,jdbcType=TIMESTAMP},
+	      #{logInfo,jdbcType=VARCHAR}, #{logLevel,jdbcType=TINYINT}, #{createTime,jdbcType=TIMESTAMP}
+	      )
+  </insert>
+
+  <!--   运行日志统计 -->
+  <select id="pageStatisticsRunLog" parameterType="map" resultType="map">
+  	SELECT
+		a.machine_code as machineCode,
+		b.mid,
+		b.client_number as clientNumber,
+		b.client_name AS clientName,
+		d.media_group_name AS mediaGroupName,
+		a.logNum
+	FROM
+		(
+			SELECT
+				*, count(run_log_id) AS logNum
+			FROM
+				fb_media_run_log
+			<where>
+				log_time BETWEEN #{startTime} and #{endTime}
+				<if test="logType != null">
+					<!-- 统计离线 -->
+					<if test="logType == 1">
+						and log_level = 1 and log_info like concat('%','终端离线','%')
+					</if>
+					<!-- 统计led更新失败 -->
+					<if test="logType == 2">
+						and log_level = 21
+					</if>
+					<!-- 统计下载 -->
+					<if test="logType == 3">
+						and log_level = 1 and log_info like concat('%','下载','%')
+					</if>
+					<!-- 统计所有异常日志 -->
+					<if test="logType == 4">
+						and (log_level in (2,3,21) or log_info like concat('%','下载失败','%'))
+					</if>
+				</if>
+			</where>
+			GROUP BY machine_code
+		) a
+	LEFT JOIN fb_media_attribute b ON a.machine_code = b.machine_code
+	LEFT JOIN fb_media_group_relation c ON b.mid = c.mid
+	LEFT JOIN fb_media_group d ON c.media_group_id = d.media_group_id
+	<if test="isAdmin != null and isAdmin == false">
+		left join fb_sysuser_mediagroup e on d.media_group_id=e.media_group_id
+	</if>
+	<where>
+		b.mid is not null
+		<if test="isAdmin != null and isAdmin == false">
+			<if test="uid != null and uid > 0">
+				and e.uid=#{uid}
+			</if>
+		</if>
+		<if test="logNum != null">
+			and a.logNum > #{logNum}
+		</if>
+		<if test="clientName != null and clientName !='' ">
+			and b.client_name like concat('%',#{clientName},'%')
+		</if>
+	</where>
+	ORDER BY a.logNum desc limit #{startRow},#{pageSize}
+  </select>
+  <select id="pageStatisticsRunLogCount" parameterType="map" resultType="java.lang.Integer">
+  	SELECT
+		COUNT(bb.machine_code)
+	FROM (
+	SELECT
+		a.machine_code
+	FROM
+		(
+			SELECT
+				*, count(run_log_id) AS logNum
+			FROM
+				fb_media_run_log
+			<where>
+				log_time BETWEEN #{startTime} and #{endTime}
+				<if test="logType != null">
+					<!-- 统计离线 -->
+					<if test="logType == 1">
+						and log_level = 1 and log_info like concat('%','终端离线','%')
+					</if>
+					<!-- 统计led更新失败 -->
+					<if test="logType == 2">
+						and log_level = 21
+					</if>
+					<!-- 统计下载 -->
+					<if test="logType == 3">
+						and log_level = 1 and log_info like concat('%','下载','%')
+					</if>
+					<!-- 统计异常日志 -->
+					<if test="logType == 4">
+						and (log_level in (2,3,21) or log_info like concat('%','下载失败','%'))
+					</if>
+				</if>
+			</where>
+			GROUP BY machine_code
+		) a
+	LEFT JOIN fb_media_attribute b ON a.machine_code = b.machine_code
+	LEFT JOIN fb_media_group_relation c ON b.mid = c.mid
+	LEFT JOIN fb_media_group d ON c.media_group_id = d.media_group_id
+	<if test="isAdmin != null and isAdmin == false">
+		left join fb_sysuser_mediagroup e on d.media_group_id=e.media_group_id
+	</if>
+	<where>
+		b.mid is not null
+		<if test="isAdmin != null and isAdmin == false">
+			<if test="uid != null and uid > 0">
+				and e.uid=#{uid}
+			</if>
+		</if>
+		<if test="logNum != null">
+			and a.logNum > #{logNum}
+		</if>
+		<if test="clientName != null and clientName !='' ">
+			and b.client_name like concat('%',#{clientName},'%')
+		</if>
+	</where>
+	) bb
+  </select>
+  <!-- 定时任务  每天算出每个终端前一天的日志的最早时间与最晚时间 -->
+  <select id="selectMediaMinAndMaxDate" parameterType="map" resultType="map">
+  	select aa.machine_code as machineCode,
+		getMediaOffAndOnTime4(aa.minId,aa.maxId) as diff_date
+	from (
+	SELECT
+		machine_code,
+		log_time,
+		min(run_log_id) as minId,
+		max(run_log_id) as maxId
+	FROM
+		fb_media_run_log
+	<where>
+		log_time BETWEEN #{startTime} AND #{endTime}
+		<choose>
+			<when test="machineCode != null and machineCode != ''">and machine_code = #{machineCode}</when>
+			<otherwise>and machine_code in (select machine_code from fb_media_attribute where work_start_time is null or (work_start_time is not null and work_start_time &lt; work_end_time))</otherwise>
+		</choose>
+	</where>
+	GROUP BY machine_code
+	) aa
+  </select>
+  <!-- 修改内容 -->
+  <update id="updateInfoByPrimaryKey" parameterType="MediaRunLogModel" >
+    update fb_media_run_log
+    set
+      log_time = #{logTime,jdbcType=TIMESTAMP},
+      log_info = #{logInfo,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=TIMESTAMP}
+    where run_log_id = #{runLogId,jdbcType=INTEGER}
+  </update>
+  <!-- 根据机器码查询指定时段的离线频率 -->
+  <select id="getOffCountByCondition" parameterType="map" resultType="map">
+  	SELECT
+		a.machine_code as machineCode,b.client_name as clientName, count(a.run_log_id) AS logNum
+	FROM
+		fb_media_run_log a LEFT JOIN fb_media_attribute b on a.machine_code=b.machine_code
+	<where>
+		a.log_time BETWEEN #{startTime} and #{endTime}
+		<if test="machineCodes != null">
+			and a.machine_code in (
+				<foreach collection="machineCodes" separator="," item="item">
+					#{item}
+				</foreach>
+			)
+		</if>
+		AND a.log_level = 1
+		AND a.log_info LIKE concat('%', '终端离线', '%')
+		GROUP BY a.machine_code
+	</where>
+  </select>
+
+</mapper>
